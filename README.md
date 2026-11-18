@@ -18,8 +18,8 @@ If port 8080 is busy, run the following in PowerShell and open the URL printed b
 - **Menu** opens the eight recipe pages. Each has prep and cooking steps you can check off.
 - **Shopping** combines ingredients and supplies. Use **Print / Save as PDF**, **Copy for Apple Notes**, or **Download Notes text**. Paste the copied text into a note, or use **File > Import to Notes** on a Mac to import the downloaded TXT. The export preserves checkmarks as text symbols. The live checkboxes are in the web app.
 - **Timeline** separates advance prep, Wednesday, and Thursday. Check off completed tasks, use **By appliance** to see bookings, and open **Cooking mode** for current and next tasks. A link in each task jumps to the relevant recipe step.
-- **Kitchen checks** includes cooler brining, food temperatures, and the thermometer checklist.
-- **Turkey weight** starts at 14 lb. Changing it updates the bird, estimated brine and injection quantities, shopping list, and thawing and grill schedule. Check the loaded spit clearance before cooking.
+- **Kitchen checks** includes overnight refrigerator drying, food temperatures, and the thermometer checklist.
+- **Turkey weight** starts at 14 lb. Changing it updates the bird, injection quantities, shopping list, and thawing and grill schedule. Check the loaded spit clearance before cooking.
 - Open **Who’s coming?** to choose adults and children using the sliders or number boxes, then press **Update portions**. Each child counts as half an adult portion. The default of 10 adults and 6 children gives 13 adult portions. Sides scale from a 9-portion base, with whole produce, garlic cloves and loaves rounded up. The Ninja schedule estimates shallow mac pans and bread batches from those quantities. It starts with three stovetop burners and a separate setup that can hold food at 140°F or above.
 
 The earlier chat provided the green beans, carrots, bread and salad recipes. The turkey, gravy, rice and mac and cheese pages are labeled reconstructions from the available menu notes and refinements.
@@ -35,7 +35,7 @@ Si ya tenías una versión anterior, detén el servidor. Copia todos los archivo
 - **Menú** abre las ocho recetas con listas para marcar los pasos. El pavo empieza en 14 lb y puedes cambiar el peso. Abre **¿Quiénes vienen?**, ajusta los adultos y niños y pulsa **Actualizar las porciones**. Cada niño cuenta como media porción de adulto. El plan empieza con 10 adultos y 6 niños, para 13 porciones de adulto.
 - **Compras** reúne los ingredientes. Puedes imprimir, guardar en PDF, copiar para Notas de Apple o descargar la lista en texto. En una Mac, importa el archivo TXT desde **Archivo > Importar a Notas**. Las marcas exportadas son símbolos de texto.
 - **Cronograma** reúne la descongelación, el día de preparación y el día de cocinar. El plan empieza con tres quemadores, la Weber y la Ninja SP101, más un equipo aparte para mantener la comida a 140 °F o más. Imprime el plan completo o un solo día.
-- **Seguridad en la cocina** incluye el manejo de la salmuera y las verificaciones con el termómetro.
+- **Seguridad en la cocina** incluye el secado de la piel en la nevera y las verificaciones con el termómetro.
 
 Las recetas de pavo, salsa, arroz y coditos se reconstruyeron a partir de las notas disponibles. El chat anterior sí incluía las recetas de habichuelas, zanahorias, pan de ajo y ensalada.
 
@@ -65,7 +65,7 @@ Guest controls are on the menu, shopping list, recipe pages and timeline. Outsid
 
 The same scaled ingredient values appear in recipe directions, the combined shopping list, Notes exports and printed plans. The shopping list estimates fresh yellow lemons from the scaled juice amount. Ingredient amounts remain fractions. The gravy ratios scale together. The garlic-butter step uses a scaled share of the recipe butter to soften the garlic.
 
-Turkey weight stays under your control. The app suggests a total using 1¼ lb of whole turkey per adult-equivalent portion. A suggestion over 20 lb calls for additional turkey cooked separately from the Weber rotisserie. The selected weight continues to determine brine, injection, thawing and turkey cooking estimates.
+Turkey weight stays under your control. The app suggests a total using 1¼ lb of whole turkey per adult-equivalent portion. A suggestion over 20 lb calls for additional turkey cooked separately from the Weber rotisserie. The selected weight continues to determine injection, thawing and turkey cooking estimates.
 
 Mac, bread and skillet batch estimates update with guest counts. Existing task start times and manually edited durations stay as entered, so a larger menu can produce conflicts that need review. Batch estimates assume ¾ lb of dry pasta per shallow pan, about four bread batches per three baguettes, up to 1½ lb beans per skillet batch and 3 lb carrots per batch. Verify actual fit in your equipment.
 
@@ -96,3 +96,20 @@ En la receta del pavo, **Salida del asador giratorio** permite ingresar una hora
 El reposo y la salsa empiezan a esa hora. El corte se programa al terminar el reposo, más cinco minutos para preparar el área. El cronograma avisa si se cruzan tareas o si terminan después de las 6 p. m. Confirma por separado que el pavo esté bien cocido.
 
 La estimación se guarda en este navegador y aparece al imprimir. **Quitar la estimación** restaura los horarios anteriores, incluidos los ajustes manuales.
+
+
+## Already-seasoned turkey and overnight skin drying
+
+The turkey contains an added salted solution. On Wednesday afternoon, once completely thawed in the refrigerator, remove its packaging, neck and giblets. Discard the bag liquid and pat the skin and cavity dry with paper towels. Set the turkey uncovered on a clean wire rack inside a rimmed tray on the lowest refrigerator shelf, apart from ready-to-eat food. Keep it at 40°F or below. The tray must catch all drips. Cook within 1–2 days after full thawing, including the overnight skin-drying time.
+
+Thursday’s injection uses unsalted butter, water and fresh herbs. The Better Than Bouillon quantity is an upper amount. Taste the mixture before raw-poultry contact and reduce the base if needed. Taste the pan drippings before adding base to the gravy.
+
+The shopping list includes a rack and rimmed tray, paper towels and ice for vegetable blanching. Brine-only ingredients and equipment have been removed. The revised recipe steps and refrigerator safety checks start unchecked on the first visit to this version. Older brine-task times and checks are retired. Guest counts, turkey weight, the finish estimate and the other checklists are preserved.
+
+## Pavo que ya viene sazonado y secado de la piel
+
+El pavo ya contiene una solución con sal. El miércoles por la tarde, cuando se haya descongelado por completo en la nevera, retira el empaque, el pescuezo y las menudencias. Bota el líquido y seca la piel y la cavidad con papel toalla. Déjalo destapado sobre una rejilla limpia dentro de una bandeja con borde, en la repisa de abajo de la nevera, separado de la comida lista para comer. Mantén la temperatura a 40 °F o menos. Cocínalo en un plazo de 1 a 2 días después de descongelarlo por completo, contando la noche de secado.
+
+El jueves prepara la inyección con mantequilla sin sal, agua y hierbas frescas. La cantidad de Better Than Bouillon indicada es un máximo. Prueba la mezcla antes de que toque el pavo crudo y usa menos base si hace falta. Prueba también los jugos de la bandeja antes de agregar base a la salsa.
+
+Las compras incluyen rejilla, bandeja con borde, papel toalla y hielo para los vegetales. Los pasos nuevos empiezan sin marcar. Los invitados, el peso del pavo, la hora estimada de salida y las otras listas se conservan.

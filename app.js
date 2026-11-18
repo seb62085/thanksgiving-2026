@@ -12,6 +12,19 @@ if(etaMinutes()===null)state.turkeyEta=null;
 for (const name of ['shopping','steps','safety','completed','taskEdits']) {
   if (!state[name] || typeof state[name] !== 'object') state[name] = {};
 }
+
+// New preparation steps must not inherit checks from the former wet-brine steps.
+if(state.turkeyPrepVersion!==2){
+  for(const id of ['turkey-prep-1','turkey-prep-2','turkey-cook-0','turkey-cook-1'])delete state.steps[id];
+  for(const id of ['make-brine','start-brine','unbrine']){
+    delete state.completed[id];
+    delete state.taskEdits[id];
+  }
+  for(const id of ['cool','overnight'])delete state.safety[id];
+  for(const id of ['Bay leaves','Black peppercorns','Ice or frozen cooler packs','Food-grade brining bag'])delete state.shopping[id];
+  state.turkeyPrepVersion=2;
+  try{localStorage.setItem(key,JSON.stringify(state));}catch{storageAvailable=false;}
+}
 const isSpanish = () => state.language === 'es';
 const locale = () => isSpanish() ? 'es-PA' : 'en-US';
 function t(message, values = {}) {
@@ -86,8 +99,7 @@ function saveGuests(event) {
   announce(t('Portions updated for {adults} adults and {children} children.',{adults,children}));
 }
 const sources = {
-  brine:'https://extension.illinois.edu/turkey/brine-method',
-  salt:'https://ask.fsis.usda.gov/article/How-do-you-brine-poultry',
+  washing:'https://ask.fsis.usda.gov/article/Should-I-wash-chicken-or-other-poultry-before-cooking',
   thaw:'https://ask.fsis.usda.gov/article/How-long-can-a-thawed-turkey-remain-in-the-refrigerator-after-thawing',
   temp:'https://www.foodsafety.gov/blog/thanksgiving-day-will-be-here-soon-and-its-time-to-get-ready',
   hold:'https://ask.fsis.usda.gov/article/How-do-I-keep-foods-safe-at-a-buffet',
@@ -117,8 +129,6 @@ function portion(recipe, item) {
   const [,name,base,unit] = item;
   if (base === null) return null;
   let amount = recipe.id === 'turkey' ? base * state.weight / 12 : base * sideFactor();
-  if (recipe.id === 'turkey' && name === 'Water' && unit === 'gal') amount = Math.ceil(amount*4)/4;
-  if (recipe.id === 'turkey' && name === 'Kosher salt') amount = Math.ceil(state.weight/12*1.5*4)/4*.75;
   if (['cloves','sprigs','leaves',''].includes(unit) && name !== 'Red onion') amount = Math.ceil(amount);
   return amount;
 }
@@ -153,7 +163,7 @@ function recipePage(r,activeStep) {
   const yieldText = r.id === 'turkey' ? t('{weight} lb whole bird',{weight:number(state.weight)}) : r.id === 'gravy' ? t('About {quantity} gravy',{quantity:measure(portion(r,r.ingredients.find(item=>item[1]==='Water')),'cups')}) : portionSummary();
   return '<div class="recipe-nav"><a class="back" href="#menu">← Recipe book</a> <a class="back" href="#timeline/kitchen">Cooking mode</a></div>'+section(r.name,t(r.gear).toLocaleUpperCase(locale())+' · '+t(r.time).toLocaleUpperCase(locale()),r.desc)+
   '<div class="actions"><a class="button" href="#timeline/cook">Cooking timeline</a>'+action('Print recipe','print')+'</div>'+notice+
-  (r.id === 'turkey' ? '<div class="panel">'+weightForm()+'<p class="muted">Brine volume is a starting estimate. Keep ¾ cup kosher salt per gallon of actual water. Scaled injection quantities are preparation amounts. Stop injecting if it pools or runs out.</p><a href="#safety">Open turkey safety checklist</a></div>' : '')+
+  (r.id === 'turkey' ? '<div class="panel">'+weightForm()+'<p class="muted">Your turkey already contains a salted solution. Dry the skin overnight in the refrigerator, then add the herb-butter injection on cooking day. Use unsalted butter and taste the injection before raw contact. Stop injecting if it pools or runs out.</p><a href="#safety">Open turkey safety checklist</a></div>' : '')+
   (r.id==='turkey'?turkeyEtaPanel():'')+guestPanel()+'<div class="split"><section class="panel"><div class="eyebrow">'+yieldText+'</div><h2>Ingredients</h2>'+
   sections.map(name=>'<h3 class="subhead">'+name+'</h3>'+r.ingredients.filter(item=>item[0]===name).map(item=>{
     const [,ingredient,,unit,note,optional]=item;
@@ -164,8 +174,9 @@ function recipePage(r,activeStep) {
 }
 const supplies = {
   'Charcoal briquettes':'Enough for the initial fire and replenishment',
-  'Ice or frozen cooler packs':'For the brine cooler and vegetable ice baths',
-  'Food-grade brining bag':'Large enough for the selected turkey',
+  'Ice':'For chilling blanched vegetables',
+  'Paper towels':'For patting the turkey dry',
+  'Wire rack and rimmed tray':'For overnight refrigerator drying; check that they fit',
   'Heavy-duty foil drip pan':'Fits beneath the bird'
 };
 function groceries() {
@@ -219,11 +230,10 @@ function notesText() {
 }
 
 const prepTasks = [
- [null,'Make and chill the brine','Use ice packs around the sealed bag. Verify the brine is 40°F or below before adding the turkey.','Cooler / fridge',['turkey'],{"id":"make-brine","phase":"prep","start":540,"duration":30,"appliance":"","units":0,"step":"prep-1","after":[]}],
+ [null,'Unpack, pat dry and refrigerate the turkey uncovered','Once fully thawed, discard the bag liquid and remove the neck and giblets. Pat the skin and cavity dry with paper towels. Set on a wire rack in a rimmed tray, uncovered on the lowest refrigerator shelf at 40°F or below, away from ready-to-eat foods. Let the skin dry overnight.','Refrigerator',['turkey'],{"id":"dry-turkey","phase":"prep","start":990,"duration":15,"appliance":"","units":0,"step":"prep-1","after":[]}],
  [null,'Blanch vegetables and prep the sofrito','Use separate ice baths or refresh the ice water. Drain, dry and refrigerate. Dice the onion and mince garlic for the rice.','Stovetop',['beans','carrots','rice'],{"id":"vegetables","phase":"prep","start":840,"duration":45,"appliance":"stove","units":1,"step":"prep-0","after":[]}],
  [null,'Mix the garlic butter and vinaigrette','Refrigerate both. Wash the salad produce and keep it whole. Leave baguettes unsliced.','Cold prep',['bread','salad'],{"id":"mix","phase":"prep","start":900,"duration":30,"appliance":"","units":0,"step":"prep-0","after":[]}],
  [null,'Shred cheese and check pan fit','Check the batch estimates on Thursday’s timeline after updating your guest count. Set out a whisk, fat separator, injector, trussing twine, drip pan and thermometers.','Ninja SP101 · cold fit',['mac','bread','gravy','turkey'],{"id":"cheese","phase":"prep","start":960,"duration":20,"appliance":"","units":0,"step":"prep-0","after":[]}],
- [null,'Start the wet brine','Keep turkey submerged in cold brine at 40°F or below. Check before bed and again in the morning.','Cooler / fridge',['turkey'],{"id":"start-brine","phase":"prep","start":1200,"duration":15,"appliance":"","units":0,"step":"prep-2","after":[]}]
 ];
 function timeOf(minutes) {
   const hour=Math.floor(minutes/60);
@@ -235,10 +245,10 @@ function schedule() {
   const thaw = new Date(Date.UTC(2026,10,25-Math.ceil(state.weight/4)));
   const date = new Intl.DateTimeFormat(locale(),{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'}).format(thaw);
   return {
-    early:[[date,'Move the frozen turkey to the fridge','Allow about 24 hours per 4–5 lb. Keep it on a tray on the lowest shelf. Once thawed, cook within 1–2 days, including the brine time.','Refrigerator',['turkey'],{"id":"thaw","phase":"early","start":480,"duration":0,"appliance":"","units":0,"step":"prep-0","after":[]}]],
+    early:[[date,'Move the frozen turkey to the fridge','Allow about 24 hours per 4–5 lb in the refrigerator. Keep the packaged turkey on a rimmed tray on the lowest shelf. Once fully thawed, cook within 1–2 days, including overnight skin drying.','Refrigerator',['turkey'],{"id":"thaw","phase":"early","start":480,"duration":0,"appliance":"","units":0,"step":"prep-0","after":[]}]],
     prep:prepTasks,
     cook:[
-      [null,'Take the turkey out of the brine','Discard brine, pat dry and refrigerate on a rimmed tray. Clean and sanitize the cooler and prep area.','Refrigerator',['turkey'],{"id":"unbrine","phase":"cook","start":540,"duration":15,"appliance":"","units":0,"step":"cook-0","after":[]}],
+      [null,'Keep the turkey chilled until grill prep','Leave the turkey on its rack in the refrigerator at 40°F or below. Prepare the unsalted butter, herbs and injector for later. Pat away any remaining skin moisture just before seasoning.','Refrigerator',['turkey'],{"id":"keep-chilled","phase":"cook","start":540,"duration":5,"appliance":"","units":0,"step":"cook-0","after":[]}],
       [null,'Set up the Weber and prep the turkey','Light the charcoal outdoors. Set up indirect heat and position the drip pan. Inject, truss and check balance and clearance before turning on the motor.','22-inch Weber',['turkey'],{"id":"setup","phase":"cook","start":on-45,"duration":45,"appliance":"weber","units":1,"step":"cook-1","after":[]}],
       [null,'Turkey on the spit','Keep the kettle near 350–400°F. Check kettle heat periodically and replenish fuel as needed.','22-inch Weber',['turkey'],{"id":"turkey","phase":"cook","start":on,"duration":cookMinutes,"appliance":"weber","units":1,"step":"cook-3","after":["setup"]}],
       [null,'Make the mac and cheese','Use up to two burners for pasta and sauce, then divide between shallow pans. Refrigerate waiting pans while one bakes.','Stovetop',['mac'],{"id":"mac-prep","phase":"cook","start":930,"duration":30,"appliance":"stove","units":2,"step":"cook-0","after":[]}],
@@ -257,8 +267,8 @@ function schedule() {
   };
 }
 const safetyChecks = [
- ['cool','Brine chilled to 40°F or below before adding turkey','Use a sanitized probe. Keep the bird submerged in the brine and surround the bag with frozen packs.'],
- ['overnight','Brine stayed at 40°F or below','Monitor in the closed cooler and replenish ice packs as needed. If above 40°F for over 2 hours, or duration is uncertain, discard the turkey.'],
+ ['fridge-cold','Refrigerator stayed at 40°F or below during thawing and skin drying','Cook within 1–2 days after the turkey is fully thawed, counting the overnight drying time.'],
+ ['turkey-rack','Turkey is on a clean rack in a rimmed tray on the lowest shelf','Keep the turkey uncovered for skin drying, with all drips caught and raw poultry away from ready-to-eat food.'],
  ['fit','Bird rotates freely within the Weber load limit','Weber rates the 22-inch accessory for a maximum of 20 lb. Confirm clearance and balance with the loaded spit.'],
  ['breast','Thickest part of breast reached at least 165°F','Use a clean instant-read probe. Avoid touching bone.'],
  ['thigh','Innermost part of thigh reached at least 165°F','Stop rotation and check before removing turkey.'],
@@ -266,9 +276,9 @@ const safetyChecks = [
  ['hold','Hot-held foods are at 140°F or above','Keep salad and other cold perishables at 40°F or below until serving.']
 ];
 function safety() {
-  return section('Kitchen checks','COOLER · KETTLE · THERMOMETERS','Keep the turkey cold during prep and verify doneness in three places before it leaves the grill.')+
+  return section('Kitchen checks','REFRIGERATOR · KETTLE · THERMOMETERS','Keep the turkey cold during prep and verify doneness in three places before it leaves the grill.')+
   '<div class="actions">'+action('Print safety checks','print')+'</div><div class="split"><div>'+
-  '<section class="panel"><h2>Cooler wet brine</h2><p>Use an unenhanced turkey and a clean, leakproof food-grade bag in a dedicated cooler. Chill the brine first. Keep the bird submerged in the bag and place frozen packs around it to avoid diluting the salt ratio. Keep the cooler closed and monitor the temperature.</p><p>Use fresh paper towels to pat the turkey dry. Discard the brine, clean and sanitize equipment and surfaces, and wash your hands before touching cooked food.</p><p>'+source('brine','Illinois Extension cooler brining')+' · '+source('salt','USDA brining')+' · '+source('thaw','USDA thawing')+'</p></section>'+
+  '<section class="panel"><h2>Overnight refrigerator drying</h2><p>After thawing, remove the packaging, neck and giblets, and pat the turkey dry with paper towels. Put it uncovered on a wire rack inside a rimmed tray on the lowest refrigerator shelf at 40°F or below. Keep it apart from ready-to-eat food and catch all drips.</p><p>Cook within 1–2 days of full thawing, including the overnight drying time. Skip rinsing poultry. Clean and sanitize tools and surfaces, and wash your hands before handling cooked food.</p><p>'+source('thaw','USDA thawing')+' · '+source('washing','USDA poultry handling')+'</p></section>'+
   '<section class="panel"><h2>Equipment & temperature</h2><p>'+source('weber','Weber 22-inch rotisserie')+' · '+source('grill','Weber indirect rotisserie setup')+' · '+source('ninja','Ninja SP101 quick-start guide (UK)')+'</p><p>'+source('temp','FoodSafety.gov turkey temperatures')+' · '+source('hold','USDA hot and cold holding')+' · '+source('base','Better Than Bouillon turkey base')+'</p></section></div>'+
   '<section class="panel"><h2>Thermometer checklist</h2>'+safetyChecks.map(args=>check('safety',...args)).join('')+'</section></div>';
 }
