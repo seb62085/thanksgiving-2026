@@ -42,3 +42,18 @@ h1,h2,h3{font-family:var(--serif);line-height:1.12}h1{font-size:clamp(2.35rem,6v
 }
 .task-form select{min-height:44px;padding:.4rem;border:1px solid #9f907c;border-radius:.35rem;background:var(--white);color:var(--ink)}
 .equipment-day{margin-top:1rem}
+.guest-panel summary{cursor:pointer;min-height:44px;font-weight:750;line-height:1.4;padding:.45rem 0}
+.guest-panel[open] summary{margin-bottom:1rem;border-bottom:1px solid var(--line)}
+.guest-panel p{margin:.5rem 0;font-size:.91rem}
+.guest-form{display:grid;gap:.8rem}
+.guest-control{display:grid;grid-template-columns:5rem 1fr 4.2rem;align-items:center;gap:.7rem}
+.guest-control label{font-weight:700}
+.guest-control input[type=range]{width:100%;min-width:0;min-height:44px;accent-color:var(--rust)}
+.guest-control input[type=number]{width:100%;min-height:44px;padding:.4rem;border:1px solid #9f907c;border-radius:.35rem;background:var(--white);color:var(--ink)}
+.guest-preview{font-weight:750;color:var(--green)}
+.guest-form .button{justify-self:start;min-height:44px}
+.guest-error{color:var(--rust)}
+.guest-error:empty{display:none}
+.batch-note{color:var(--muted);font-weight:650}
+@media(min-width:700px){.guest-form{grid-template-columns:1fr 1fr}.guest-preview,.guest-error{grid-column:1/-1}}
+@media print{.guest-panel{display:none!important}}

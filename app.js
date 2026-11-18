@@ -1,6 +1,6 @@
 const main = document.querySelector('main');
 const key = 'thanksgiving-at-home-2026-v1';
-const defaults = {language:"en", weight:14, shopping:{}, steps:{}, safety:{}, completed:{}, taskEdits:{}, burners:3};
+const defaults = {language:"en", adults:10, children:6, portionsChanged:false, weight:14, shopping:{}, steps:{}, safety:{}, completed:{}, taskEdits:{}, burners:3};
 let state = {...defaults};
 let storageAvailable = true;
 try {
@@ -31,7 +31,59 @@ function save() {
   catch { storageAvailable = false; announce('Browser storage is unavailable. Progress is available until this page closes.'); }
 }
 function announce(message) { document.querySelector('#notice').textContent = t(message); }
-const sideFactor = 1.5;
+const baseSideServings = 9;
+function guestPortions(adults=state.adults,children=state.children) {
+  return adults + children / 2;
+}
+if (!Number.isInteger(state.adults) || state.adults<0 || state.adults>40) state.adults=defaults.adults;
+if (!Number.isInteger(state.children) || state.children<0 || state.children>30) state.children=defaults.children;
+if (!guestPortions()) { state.adults=defaults.adults; state.children=defaults.children; }
+const sideFactor = () => guestPortions() / baseSideServings;
+const guestSummary = () => t('{adults} adults · {children} children',{adults:state.adults,children:state.children});
+const portionSummary = (adults=state.adults,children=state.children) =>
+  t('{portions} adult portions',{portions:number(guestPortions(adults,children))});
+function turkeySuggestion(adults=state.adults,children=state.children) {
+  return Math.ceil(guestPortions(adults,children) * 1.25 * 2) / 2;
+}
+function guestPanel(expanded=false) {
+  const control=(name,label,max)=>'<div class="guest-control"><label for="guest-'+name+'">'+t(label)+'</label>'+
+    '<input aria-label="'+t(label)+'" data-guest-range="'+name+'" type="range" min="0" max="'+max+'" step="1" value="'+state[name]+'">'+
+    '<input id="guest-'+name+'" name="'+name+'" type="number" min="0" max="'+max+'" step="1" required value="'+state[name]+'"></div>';
+  return '<details class="panel guest-panel"'+(expanded?' open':'')+'><summary>'+guestSummary()+' · '+portionSummary()+'</summary><div><div class="eyebrow">'+t('PLAN YOUR TABLE')+'</div><h2>'+t('Who’s coming?')+'</h2>'+
+    '<p>'+t('Each child counts as ½ an adult portion. Adjust the guests, then update the portions.')+'</p></div>'+
+    '<form class="guest-form">'+control('adults','Adults',40)+control('children','Children',30)+
+    '<p class="guest-preview" aria-live="polite">'+portionSummary()+'</p>'+
+    '<button class="button primary" type="submit">'+t('Update portions')+'</button><p class="guest-error" role="alert"></p></form>'+
+    '<p class="muted guest-turkey">'+t('Suggested whole-turkey weight: {weight} lb.',{weight:number(turkeySuggestion())})+' '+
+      t('Guide: 1¼ lb per adult portion. Your selected turkey stays at {weight} lb.',{weight:number(state.weight)})+'</p>'+
+    '<p class="muted">'+t('Side recipes use a 9-portion base. Whole produce, garlic cloves and loaves round up.')+' <a href="https://extension.illinois.edu/turkey/choosing-your-turkey" target="_blank" rel="noopener">'+t('Turkey size guide')+'</a></p>'+
+    (turkeySuggestion()>20?'<div class="callout">'+t('The suggested total exceeds the Weber’s 20 lb limit. Plan additional turkey separately.')+'</div>':'')+
+    (state.portionsChanged?'<div class="callout"><p>'+t('Portions changed. Review checked shopping items and completed prep for any extra amounts needed.')+'</p>'+
+      action(t('Reviewed quantities'),'review-portions')+'</div>':'')+'</details>';
+}
+function previewGuests(form) {
+  const adults=Number(form.elements.adults.value);
+  const children=Number(form.elements.children.value);
+  if(!Number.isInteger(adults)||adults<0||adults>40||!Number.isInteger(children)||children<0||children>30)return;
+  form.querySelector('.guest-preview').textContent=portionSummary(adults,children);
+}
+function saveGuests(event) {
+  event.preventDefault();
+  const form=event.target;
+  const adults=Number(form.elements.adults.value);
+  const children=Number(form.elements.children.value);
+  if(!Number.isInteger(adults)||adults<0||adults>40||!Number.isInteger(children)||children<0||children>30||adults+children===0){
+    form.querySelector('.guest-error').textContent=t('Choose at least one guest, with whole numbers within the displayed limits.');
+    return;
+  }
+  if(adults!==state.adults||children!==state.children)state.portionsChanged=true;
+  state.adults=adults;
+  state.children=children;
+  save();
+  render();
+  main.querySelector('[name="adults"]').focus({preventScroll:true});
+  announce(t('Portions updated for {adults} adults and {children} children.',{adults,children}));
+}
 const sources = {
   brine:'https://extension.illinois.edu/turkey/brine-method',
   salt:'https://ask.fsis.usda.gov/article/How-do-you-brine-poultry',
@@ -63,7 +115,7 @@ function number(value) {
 function portion(recipe, item) {
   const [,name,base,unit] = item;
   if (base === null) return null;
-  let amount = recipe.id === 'turkey' ? base * state.weight / 12 : base * sideFactor;
+  let amount = recipe.id === 'turkey' ? base * state.weight / 12 : base * sideFactor();
   if (recipe.id === 'turkey' && name === 'Water' && unit === 'gal') amount = Math.ceil(amount*4)/4;
   if (recipe.id === 'turkey' && name === 'Kosher salt') amount = Math.ceil(state.weight/12*1.5*4)/4*.75;
   if (['cloves','sprigs','leaves',''].includes(unit) && name !== 'Red onion') amount = Math.ceil(amount);
@@ -90,24 +142,24 @@ function menu() {
   const progress = Math.round(bought/list.length*100);
   const art = document.querySelector('#art').innerHTML;
   return '<section class="hero"><div class="hero-copy"><div class="kicker">THURSDAY, NOVEMBER 26 · DINNER AT 6 PM</div><h1>Thanksgiving<br>at Home.</h1><p>A rotisserie turkey, seven favorites and a kitchen plan for getting everything to the table.</p><div class="actions"><a class="button primary" href="#timeline/cook">Open cooking plan →</a><a class="button secondary" href="#shopping">Shop the menu</a><a class="button secondary" href="#print">Print Cooking Plan</a></div></div><div class="hero-art">'+art+'</div></section>'+
-  '<div class="summary"><div><small>THE TABLE</small><strong>10 adults + kids</strong><small>Planned for 5–6 children</small></div><div><small>THE MENU</small><strong>8 recipes</strong><small>One holiday dinner</small></div><div><small>THE MAIN</small><strong>'+t('{weight} lb turkey',{weight:number(state.weight)})+'</strong><a href="#recipe/turkey">Adjust weight</a></div><div><small>SHOPPING</small><strong>'+t('{count} of {total}',{count:bought,total:list.length})+'</strong><progress value="'+progress+'" max="100" aria-label="Shopping progress"></progress></div></div>'+
-  '<div class="section-head"><div><div class="eyebrow">THE RECIPE BOOK</div><h2>On the table</h2></div></div><div class="grid">'+recipes.map((r,i)=>'<a class="card" href="#recipe/'+r.id+'"><div class="card-art '+r.color+'"><span class="eyebrow">'+t('RECIPE 0{index}',{index:i+1})+'</span><span aria-hidden="true">'+r.icon+'</span></div><div class="card-copy"><h3>'+r.name+'</h3><p>'+r.desc+'</p><span class="chip">'+r.gear+'</span> <span class="chip">'+r.time+'</span></div></a>').join('')+'</div>';
+  '<div class="summary"><div><small>THE TABLE</small><strong>'+guestSummary()+'</strong><small>'+portionSummary()+'</small></div><div><small>THE MENU</small><strong>8 recipes</strong><small>One holiday dinner</small></div><div><small>THE MAIN</small><strong>'+t('{weight} lb turkey',{weight:number(state.weight)})+'</strong><a href="#recipe/turkey">Adjust weight</a></div><div><small>SHOPPING</small><strong>'+t('{count} of {total}',{count:bought,total:list.length})+'</strong><progress value="'+progress+'" max="100" aria-label="Shopping progress"></progress></div></div>'+
+  guestPanel(true)+'<div class="section-head"><div><div class="eyebrow">THE RECIPE BOOK</div><h2>On the table</h2></div></div><div class="grid">'+recipes.map((r,i)=>'<a class="card" href="#recipe/'+r.id+'"><div class="card-art '+r.color+'"><span class="eyebrow">'+t('RECIPE 0{index}',{index:i+1})+'</span><span aria-hidden="true">'+r.icon+'</span></div><div class="card-copy"><h3>'+r.name+'</h3><p>'+r.desc+'</p><span class="chip">'+r.gear+'</span> <span class="chip">'+r.time+'</span></div></a>').join('')+'</div>';
 }
 function recipePage(r,activeStep) {
   const sections = [...new Set(r.ingredients.map(item=>item[0]))];
   const plan = ['turkey','gravy','rice','mac'].includes(r.id);
   const notice = plan ? '<div class="callout"><p><strong>Recipe reconstructed from the menu notes.</strong> The original ingredient list and method weren’t available in the referenced chat.</p></div>' : '';
-  const yieldText = r.id === 'turkey' ? t('{weight} lb whole bird',{weight:number(state.weight)}) : r.id === 'gravy' ? 'About 4½ cups' : 'About 12–15 side portions';
+  const yieldText = r.id === 'turkey' ? t('{weight} lb whole bird',{weight:number(state.weight)}) : r.id === 'gravy' ? t('About {quantity} gravy',{quantity:measure(portion(r,r.ingredients.find(item=>item[1]==='Water')),'cups')}) : portionSummary();
   return '<div class="recipe-nav"><a class="back" href="#menu">← Recipe book</a> <a class="back" href="#timeline/kitchen">Cooking mode</a></div>'+section(r.name,t(r.gear).toLocaleUpperCase(locale())+' · '+t(r.time).toLocaleUpperCase(locale()),r.desc)+
   '<div class="actions"><a class="button" href="#timeline/cook">Cooking timeline</a>'+action('Print recipe','print')+'</div>'+notice+
   (r.id === 'turkey' ? '<div class="panel">'+weightForm()+'<p class="muted">Brine volume is a starting estimate. Keep ¾ cup kosher salt per gallon of actual water. Scaled injection quantities are preparation amounts. Stop injecting if it pools or runs out.</p><a href="#safety">Open turkey safety checklist</a></div>' : '')+
-  '<div class="split"><section class="panel"><div class="eyebrow">'+yieldText+'</div><h2>Ingredients</h2>'+
+  guestPanel()+'<div class="split"><section class="panel"><div class="eyebrow">'+yieldText+'</div><h2>Ingredients</h2>'+
   sections.map(name=>'<h3 class="subhead">'+name+'</h3>'+r.ingredients.filter(item=>item[0]===name).map(item=>{
     const [,ingredient,,unit,note,optional]=item;
     return '<div class="ingredient"><span>'+ingredient+(optional?' <span class="chip">Optional</span>':'')+(note?'<small>'+note+'</small>':'')+'</span><strong>'+measure(portion(r,item),unit)+'</strong></div>';
   }).join('')).join('')+'</section><div>'+
   [['prep','Prep ahead'],['cook','Cook & serve']].map(([id,label])=>'<section class="panel"><h2>'+label+'</h2>'+r[id].map((step,i)=>'<div id="step-'+id+'-'+i+'" tabindex="-1"'+(activeStep===id+'-'+i?' class="active-step"':'')+'>'+check('steps',r.id+'-'+id+'-'+i,(i+1)+'. '+recipeStep(r,step))+'</div>').join('')+'</section>').join('')+
-  (r.id === 'gravy' ? '<div class="callout">For this batch, use up to 6 tbsp total fat, 6 tbsp flour and 4½ cups liquid. Follow the ratios in the ingredient list.</div>' : '')+'</div></div>';
+  (r.id === 'gravy' ? '<div class="callout">'+t('Follow the scaled fat, flour and liquid amounts in the ingredients and steps.')+'</div>' : '')+'</div></div>';
 }
 const supplies = {
   'Charcoal briquettes':'Enough for the initial fire and replenishment',
@@ -117,7 +169,7 @@ const supplies = {
 };
 function groceries() {
   return Object.entries(groups).map(([group,names])=>[group,names.map(name=>{
-    const uses = recipes.flatMap(r=>r.ingredients.filter(item=>item[1]===name).map(item=>({r,item})));
+    const uses = recipes.flatMap(r=>r.ingredients.filter(item=>(item[1]==='Lemon juice'?'Lemons':item[1])===name).map(item=>({r,item})));
     const amounts = new Map();
     const options = new Map();
     for (const {r,item} of uses) {
@@ -138,7 +190,10 @@ function groceries() {
       return [...map].map(([unit,value])=>measure(value,unit)).join(' + ');
     };
     let amount = pretty(amounts) || t(supplies[name] || 'To taste');
-    if (name === 'Lemons') amount = t('3 medium, for about 3¼–3½ tbsp juice');
+    if (name === 'Lemons') {
+      const juice=uses.reduce((total,{r,item})=>total+portion(r,item)*(item[3]==='tbsp'?3:1),0);
+      amount=t('{count} lemons · about {quantity} juice',{count:Math.ceil(juice/9),quantity:measure(juice/3,'tbsp')});
+    }
     if (name === 'Kosher salt') amount += ' + '+t('extra for seasoning and cooking water');
     if (name === 'Black pepper') amount += ' + '+t('extra to taste');
     if (options.size) amount += ' + '+pretty(options)+' '+t('optional');
@@ -150,7 +205,7 @@ function shopping() {
   const list=groceries();
   const count=list.flatMap(([,items])=>items).length;
   return section('Shopping list','THE MARKET LIST','Combined across all eight recipes. Your checks stay in this browser.')+
-  '<div class="panel">'+weightForm()+'<p id="shop-progress" class="muted" data-total="'+count+'"></p></div>'+
+  guestPanel()+'<div class="panel">'+weightForm()+'<p id="shop-progress" class="muted" data-total="'+count+'"></p></div>'+
   '<div class="actions">'+action('Print / Save as PDF','print')+action('Download Notes text','download')+action('Copy for Apple Notes','copy')+'</div><p id="export-status" class="muted">Notes export is a plain-text list with checkbox symbols and your current checkmarks.</p>'+
   '<div class="grid">'+list.map(([name,items])=>'<section class="panel"><h2>'+name+'</h2>'+items.map(item=>check('shopping',item.name,'<strong>'+t(item.name)+'</strong>',item.amount+(item.dishes?' · '+item.dishes:''))).join('')+'</section>').join('')+'</div>';
 }
@@ -159,14 +214,14 @@ function progress() {
   if (target) target.textContent = t('{count} of {total} checked',{count:main.querySelectorAll('[data-kind="shopping"]:checked').length,total:target.dataset.total})+(storageAvailable?'':' · '+t('progress is temporary'));
 }
 function notesText() {
-  return t('Thanksgiving 2026 · Shopping list')+'\n'+t('Thursday, November 26 · 6 PM')+' · '+t('{weight} lb turkey',{weight:number(state.weight)})+'\n\n'+groceries().map(([group,items])=>t(group).toLocaleUpperCase(locale())+'\n'+items.map(({name,amount})=>(state.shopping[name]?'☑':'☐')+' '+t(name)+' — '+amount).join('\n')).join('\n\n')+'\n';
+  return t('Thanksgiving 2026 · Shopping list')+'\n'+t('Thursday, November 26 · 6 PM')+'\n'+guestSummary()+' · '+portionSummary()+'\n'+t('{weight} lb turkey',{weight:number(state.weight)})+'\n\n'+groceries().map(([group,items])=>t(group).toLocaleUpperCase(locale())+'\n'+items.map(({name,amount})=>(state.shopping[name]?'☑':'☐')+' '+t(name)+' — '+amount).join('\n')).join('\n\n')+'\n';
 }
 
 const prepTasks = [
  [null,'Make and chill the brine','Use ice packs around the sealed bag. Verify the brine is 40°F or below before adding the turkey.','Cooler / fridge',['turkey'],{"id":"make-brine","phase":"prep","start":540,"duration":30,"appliance":"","units":0,"step":"prep-1","after":[]}],
  [null,'Blanch vegetables and prep the sofrito','Use separate ice baths or refresh the ice water. Drain, dry and refrigerate. Dice the onion and mince garlic for the rice.','Stovetop',['beans','carrots','rice'],{"id":"vegetables","phase":"prep","start":840,"duration":45,"appliance":"stove","units":1,"step":"prep-0","after":[]}],
  [null,'Mix the garlic butter and vinaigrette','Refrigerate both. Wash the salad produce and keep it whole. Leave baguettes unsliced.','Cold prep',['bread','salad'],{"id":"mix","phase":"prep","start":900,"duration":30,"appliance":"","units":0,"step":"prep-0","after":[]}],
- [null,'Shred cheese and check pan fit','Plan for two sequential shallow mac pans and up to four bread batches. Set out a whisk, fat separator, injector, trussing twine, drip pan and thermometers.','Ninja SP101 · cold fit',['mac','bread','gravy','turkey'],{"id":"cheese","phase":"prep","start":960,"duration":20,"appliance":"","units":0,"step":"prep-0","after":[]}],
+ [null,'Shred cheese and check pan fit','Check the batch estimates on Thursday’s timeline after updating your guest count. Set out a whisk, fat separator, injector, trussing twine, drip pan and thermometers.','Ninja SP101 · cold fit',['mac','bread','gravy','turkey'],{"id":"cheese","phase":"prep","start":960,"duration":20,"appliance":"","units":0,"step":"prep-0","after":[]}],
  [null,'Start the wet brine','Keep turkey submerged in cold brine at 40°F or below. Check before bed and again in the morning.','Cooler / fridge',['turkey'],{"id":"start-brine","phase":"prep","start":1200,"duration":15,"appliance":"","units":0,"step":"prep-2","after":[]}]
 ];
 function timeOf(minutes) {
@@ -185,11 +240,11 @@ function schedule() {
       [null,'Take the turkey out of the brine','Discard brine, pat dry and refrigerate on a rimmed tray. Clean and sanitize the cooler and prep area.','Refrigerator',['turkey'],{"id":"unbrine","phase":"cook","start":540,"duration":15,"appliance":"","units":0,"step":"cook-0","after":[]}],
       [null,'Set up the Weber and prep the turkey','Light the charcoal outdoors. Set up indirect heat and position the drip pan. Inject, truss and check balance and clearance before turning on the motor.','22-inch Weber',['turkey'],{"id":"setup","phase":"cook","start":on-45,"duration":45,"appliance":"weber","units":1,"step":"cook-1","after":[]}],
       [null,'Turkey on the spit','Keep the kettle near 350–400°F. Check kettle heat periodically and replenish fuel as needed.','22-inch Weber',['turkey'],{"id":"turkey","phase":"cook","start":on,"duration":cookMinutes,"appliance":"weber","units":1,"step":"cook-3","after":["setup"]}],
-      [null,'Make the mac and cheese','Use up to two burners for pasta and sauce, then divide between two shallow pans. Refrigerate the second pan while the first bakes.','Stovetop',['mac'],{"id":"mac-prep","phase":"cook","start":930,"duration":30,"appliance":"stove","units":2,"step":"cook-0","after":[]}],
-      [null,'Start baking mac and cheese','Ninja BAKE at 350°F. Budget 25–30 minutes per shallow pan, longer if cold. Verify the center of any chilled pan reaches 165°F. Keep the finished pans at 140°F or above in a separate holding setup.','Ninja SP101',['mac'],{"id":"mac-bake","phase":"cook","start":960,"duration":60,"appliance":"ninja","units":1,"step":"cook-2","after":["mac-prep"]}],
+      [null,'Make the mac and cheese','Use up to two burners for pasta and sauce, then divide between shallow pans. Refrigerate waiting pans while one bakes.','Stovetop',['mac'],{"id":"mac-prep","phase":"cook","start":930,"duration":30,"appliance":"stove","units":2,"step":"cook-0","after":[]}],
+      [null,'Start baking mac and cheese','Ninja BAKE at 350°F. Budget 25–30 minutes per shallow pan, longer if cold. Verify the center of any chilled pan reaches 165°F. Keep finished pans at 140°F or above in a separate holding setup.','Ninja SP101',['mac'],{"id":"mac-bake","phase":"cook","start":960,"duration":60,"appliance":"ninja","units":1,"step":"cook-2","after":["mac-prep"]}],
       [null,'Chop and chill the salad','Cover and refrigerate. Keep the dressing separate.','Cold prep',['salad'],{"id":"chop","phase":"cook","start":985,"duration":10,"appliance":"","units":0,"step":"cook-0","after":[]}],
       [null,'Start rice and soften garlic butter','Allow about 35 minutes for the rice, including covered rest. Hold cooked rice at 140°F or above as needed.','Stovetop',['rice','bread'],{"id":"rice","phase":"cook","start":995,"duration":35,"appliance":"stove","units":1,"step":"cook-0","after":[]}],
-      [null,'Slice and butter bread','Ninja BAKE at 375°F after the mac clears. Use a single layer, 6–9 minutes per batch. Budget four batches. If the slices need a fifth batch, add up to 10 minutes to the booking. Transfer finished bread to a basket.','Ninja SP101',['bread'],{"id":"bread","phase":"cook","start":1020,"duration":40,"appliance":"ninja","units":1,"step":"cook-0","after":["mac-bake"]}],
+      [null,'Slice and butter bread','Ninja BAKE at 375°F after the mac clears. Use a single layer, 6–9 minutes per batch. Check the batch estimate below and adjust the booking to suit your actual bread slices and pan. Transfer finished bread to a basket.','Ninja SP101',['bread'],{"id":"bread","phase":"cook","start":1020,"duration":40,"appliance":"ninja","units":1,"step":"cook-0","after":["mac-bake"]}],
       [null,'Verify turkey, then rest','Check breast, thigh and wing for at least 165°F each. Rest 20–30 minutes once done. If it runs late, keep cooking and move gravy and carving back.','22-inch Weber · temperature gate',['turkey','gravy'],{"id":"rest","phase":"cook","start":1025,"duration":30,"appliance":"","units":0,"step":"cook-4","after":["turkey"]}],
       [null,'Glaze the carrots','Cook in the larger skillet and transfer to a covered dish. Keep hot for service.','Stovetop',['carrots'],{"id":"carrots","phase":"cook","start":1030,"duration":15,"appliance":"stove","units":1,"step":"cook-0","after":[]}],
       [null,'Make the gravy','Use the collected pan drippings. Allow about 15 minutes while the turkey rests.','Stovetop',['gravy'],{"id":"gravy","phase":"cook","start":1025,"duration":15,"appliance":"stove","units":1,"step":"cook-0","after":["turkey"]}],
@@ -242,6 +297,15 @@ function render({focus=false}={}) {
   }
 }
 window.addEventListener('hashchange',()=>{ if(location.hash!=='#main')render({focus:true}); });
+main.addEventListener('input',event=>{
+  const form=event.target.closest('.guest-form');
+  if(!form)return;
+  const name=event.target.dataset.guestRange || event.target.name;
+  if(!['adults','children'].includes(name))return;
+  if(event.target.dataset.guestRange)form.elements[name].value=event.target.value;
+  else form.querySelector('[data-guest-range="'+name+'"]').value=event.target.value;
+  previewGuests(form);
+});
 main.addEventListener('change',event=>{
   const {kind,id}=event.target.dataset;
   if(!kind)return;
@@ -252,6 +316,7 @@ main.addEventListener('change',event=>{
   if(kind==='completed')refreshPlanner();
 });
 main.addEventListener('submit',event=>{
+  if(event.target.matches('.guest-form')){saveGuests(event);return;}
   if(!event.target.matches('.weight')){ handlePlannerSubmit(event); return; }
   event.preventDefault();
   const next=Number(new FormData(event.target).get('weight'));
@@ -267,6 +332,11 @@ main.addEventListener('click',async event=>{
   const button=event.target.closest('[data-action]');
   if(!button)return;
   const actionId=button.dataset.action;
+  if(actionId==='review-portions'){
+    state.portionsChanged=false;
+    save();
+    render();
+  }
   if(actionId==='print') window.print();
   if(actionId==='reset-task')resetTask(button);
   if(actionId==='download'){

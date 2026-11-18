@@ -3,8 +3,29 @@ const applianceLabels = {weber:'22-inch Weber',ninja:'Ninja SP101',stove:'Stovet
 const phaseLabels = {early:'Advance preparation',prep:'Wednesday, November 25',cook:'Thursday, November 26'};
 const phaseOrder = Object.keys(phaseLabels);
 
+function estimatedBatches() {
+  const pasta=portion(lookup.mac,lookup.mac.ingredients.find(item=>item[1]==='Elbow macaroni'));
+  const bread=portion(lookup.bread,lookup.bread.ingredients.find(item=>item[1]==='French baguettes'));
+  const vegetables=id=>portion(lookup[id],lookup[id].ingredients.find(item=>item[1]=== (id==='beans'?'Green beans':'Carrots')));
+  return {
+    mac:Math.ceil(pasta / 0.75 - 1e-9),
+    bread:Math.ceil(bread * 4 / 3 - 1e-9),
+    beans:Math.ceil(vegetables('beans') / 1.5 - 1e-9),
+    carrots:Math.ceil(vegetables('carrots') / 3 - 1e-9)
+  };
+}
+function batchNote(task) {
+  const batches=estimatedBatches();
+  if(task.id==='mac-bake')return t('Estimate: {count} shallow pan(s), 30 minutes each.',{count:batches.mac});
+  if(task.id==='bread')return t('Estimate: {count} bread batches, 10 minutes each.',{count:batches.bread});
+  if(task.id==='beans'||task.id==='carrots')return t('Estimate: {count} skillet batch(es).',{count:batches[task.id]});
+  return '';
+}
 function plannedTasks() {
+  const batches=estimatedBatches();
   return Object.values(schedule()).flat().map(([date,title,detail,gear,links,defaults])=>{
+    const estimates={'mac-bake':batches.mac*30,bread:batches.bread*10,beans:Math.max(10,batches.beans*7+1),carrots:batches.carrots*15};
+    defaults={...defaults,duration:estimates[defaults.id] || defaults.duration};
     const edit=state.taskEdits[defaults.id];
     const valid=edit && Number.isInteger(edit.start) && Number.isInteger(edit.duration) &&
       edit.start>=0 && edit.duration>=1 && edit.start+edit.duration<=1440;
@@ -96,7 +117,7 @@ function taskCard(task,{edit=false,print=false,now=new Date()}={}) {
     (task.duration?'<small>'+task.duration+' min</small>':'')+'</div><div>'+
     '<div class="task-heading">'+mark+label+'</div><span class="chip">'+equipmentText(task)+'</span>'+
     (print?'':' <span class="chip task-status" data-status="'+task.id+'" data-value="'+status+'">'+t(status)+'</span>')+
-    '<p>'+t(task.detail)+'</p>'+
+    '<p>'+t(task.detail)+'</p>'+(batchNote(task)?'<p class="batch-note">'+batchNote(task)+'</p>':'')+
     (print ? (recipesText?'<p class="print-recipes">'+recipesText+'</p>':'') :
       '<div class="task-links">'+task.links.map(id=>linkToStep(task,id)).join('')+'</div>')+
     editor+'</div></article>';
@@ -216,7 +237,7 @@ function timeline(mode) {
   const header=section('The dinner timeline','THURSDAY, NOVEMBER 26 · 6 PM',
     'Coordinate the Weber rotisserie, Ninja SP101 and stovetop. Times follow this device’s local clock.');
   const target='<div class="dinner-target"><strong>'+t('Dinner target · Thu Nov 26 · 6:00 PM')+'</strong><span id="plan-count">'+planProgress(plan)+'</span></div>';
-  if(mode==='kitchen')return header+target+nav+'<div id="kitchen-live" tabindex="-1">'+kitchenContent(plan,now)+'</div>';
+  if(mode==='kitchen')return header+target+nav+guestPanel()+'<div id="kitchen-live" tabindex="-1">'+kitchenContent(plan,now)+'</div>';
   const phases=phaseOrder.filter(id=>mode==='all'||mode===id);
   const phaseLists=phases.map(id=>'<section class="plan-section"><h2>'+t(phaseLabels[id])+'</h2>'+
     plan.filter(task=>task.phase===id).map(task=>taskCard(task,{edit:true,now})).join('')+'</section>').join('');
@@ -226,7 +247,7 @@ function timeline(mode) {
   const controls='<div class="panel planner-controls">'+weightForm()+
     '<form class="burner-form"><label>'+t('Available stovetop burners')+' <input type="number" name="burners" min="1" max="6" value="'+state.burners+'" required></label>'+
     '<button class="button" type="submit">'+t('Update capacity')+'</button></form></div>';
-  return header+target+nav+'<div id="planner-next">'+nextContent(plan,now)+'</div>'+
+  return header+target+nav+guestPanel()+'<div id="planner-next">'+nextContent(plan,now)+'</div>'+
     (cooking?controls+
     '<div class="callout"><p>'+t('Use separate hot holding for the first pan of mac and cheese and any turkey that finishes early. Gravy starts after the turkey actually comes off. Check doneness separately.')+'</p></div>'+
     conflictPanel(plan)+applianceChart(plan):'')+(mode==='appliances'?equipmentLists:phaseLists);
@@ -310,7 +331,7 @@ function printPage() {
 }
 function printContent(selected) {
   const plan=plannedTasks();
-  const heading=section('Print Cooking Plan','THANKSGIVING AT HOME / 2026','Dinner target · Thu Nov 26 · 6:00 PM');
+  const heading=section('Print Cooking Plan','THANKSGIVING AT HOME / 2026','Dinner target · Thu Nov 26 · 6:00 PM')+'<p>'+guestSummary()+' · '+portionSummary()+' · '+t('{weight} lb turkey',{weight:number(state.weight)})+'</p>';
   const group=(title,tasks)=>'<section class="print-group"><h2>'+t(title)+'</h2>'+
     tasks.map(task=>taskCard(task,{print:true})).join('')+'</section>';
   const phaseContent=phaseOrder.filter(id=>selected.includes('all')||selected.includes(id))
@@ -322,7 +343,7 @@ function printContent(selected) {
     items.map(item=>'<div class="print-line"><span class="print-check"></span><span>'+t(item.name)+'</span><strong>'+item.amount+'</strong></div>').join('')+
     '</section>').join('')+'</section>':'';
   const recipeContent=recipes.filter(r=>selected.includes(r.id)).map(r=>'<section class="print-recipe"><h2>'+t(r.name)+'</h2><p>'+
-    t(r.gear)+' · '+t(r.time)+'</p>'+
+    t(r.gear)+' · '+t(r.time)+' · '+(r.id==='turkey'?t('{weight} lb whole bird',{weight:number(state.weight)}):portionSummary())+'</p>'+
     [...new Set(r.ingredients.map(item=>item[0]))].map(group=>'<section class="print-ingredients"><h3>'+t(group)+'</h3>'+
       r.ingredients.filter(item=>item[0]===group).map(item=>'<div class="print-line"><span>'+t(item[1])+
         (item[4]?'<small>'+t(item[4])+'</small>':'')+(item[5]?' ('+t('Optional')+')':'')+'</span>'+
