@@ -21,9 +21,58 @@ function batchNote(task) {
   if(task.id==='beans'||task.id==='carrots')return t('Estimate: {count} skillet batch(es).',{count:batches[task.id]});
   return '';
 }
-function plannedTasks() {
+function etaMinutes(value=state.turkeyEta) {
+  if(typeof value!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(value))return null;
+  const [hours,minutes]=value.split(':').map(Number);
+  return hours*60+minutes;
+}
+function etaError(plan,minutes) {
+  const turkey=plan.find(task=>task.id==='turkey');
+  const rest=plan.find(task=>task.id==='rest');
+  const gravy=plan.find(task=>task.id==='gravy');
+  const carve=plan.find(task=>task.id==='carve');
+  if(minutes===null||minutes<=turkey.start)return 'Choose a finish time later than the turkey’s scheduled start.';
+  if(minutes+Math.max(gravy.duration,rest.duration+5+carve.duration)>1440)return 'Choose a finish time that leaves room for resting and carving before midnight.';
+  return '';
+}
+function saveTurkeyEta(event) {
+  event.preventDefault();
+  const form=event.target;
+  const value=form.elements.eta.value;
+  const error=etaError(plannedTasks({ignoreEta:true}),etaMinutes(value));
+  if(error){form.querySelector('.eta-error').textContent=t(error);return;}
+  state.turkeyEta=value;
+  save();
+  render();
+  main.querySelector('#turkey-eta').focus({preventScroll:true});
+  announce('Turkey finish estimate saved. Timeline updated.');
+}
+function turkeyEtaSummary() {
+  if(!state.turkeyEta)return '';
+  const error=etaError(plannedTasks({ignoreEta:true}),etaMinutes());
+  return '<p class="eta-summary">'+(error?t('Finish estimate needs review. The previous task timings are displayed.')+' '+t(error):
+    t('Turkey finish estimate: {time}. Rest, gravy and carving follow this estimate.',{time:clock(etaMinutes())}))+
+    ' <a href="#recipe/turkey">'+t('Update estimate')+'</a></p>';
+}
+function turkeyEtaPanel() {
+  const plan=plannedTasks({ignoreEta:true});
+  const minutes=etaMinutes();
+  const current=plannedTasks().find(task=>task.id==='turkey');
+  const invalid=state.turkeyEta?etaError(plan,minutes):'';
+  return '<section class="panel turkey-eta"><div class="eyebrow">'+t('COMBUSTION · COOKING ESTIMATE')+'</div><h2>'+t('Off the rotisserie')+'</h2>'+
+    '<p>'+t('Enter the estimated clock time you expect to take the turkey off the rotisserie. Update it as your thermometer’s prediction changes.')+'</p>'+
+    '<form class="eta-form"><label for="turkey-eta">'+t('Estimated finish · Thu Nov 26')+'</label><input id="turkey-eta" type="time" name="eta" value="'+(minutes===null?'':clockInput(minutes))+'" required>'+
+    '<button class="button primary" type="submit">'+t('Update timeline')+'</button>'+
+    (state.turkeyEta?'<button class="button" type="button" data-action="clear-turkey-eta">'+t('Clear estimate')+'</button>':'')+
+    '<p class="eta-error" role="alert">'+t(invalid)+'</p></form>'+
+    '<p><strong>'+t('Scheduled off the rotisserie: {time}',{time:clock(current.end)})+'</strong></p>'+
+    '<p class="muted">'+t('The estimate updates the turkey’s end time, rest, gravy and carving. Review side dishes and any timing conflicts before dinner.')+'</p>'+
+    '<p class="muted">'+t('Confirm safe doneness separately. USDA recommends 165°F in the breast, innermost thigh and innermost wing.')+' '+source('temp','FoodSafety.gov turkey temperatures')+'</p>'+
+    '<a href="#timeline/cook">'+t('View updated cooking timeline')+'</a></section>';
+}
+function plannedTasks({ignoreEta=false}={}) {
   const batches=estimatedBatches();
-  return Object.values(schedule()).flat().map(([date,title,detail,gear,links,defaults])=>{
+  let plan=Object.values(schedule()).flat().map(([date,title,detail,gear,links,defaults])=>{
     const estimates={'mac-bake':batches.mac*30,bread:batches.bread*10,beans:Math.max(10,batches.beans*7+1),carrots:batches.carrots*15};
     defaults={...defaults,duration:estimates[defaults.id] || defaults.duration};
     const edit=state.taskEdits[defaults.id];
@@ -33,7 +82,20 @@ function plannedTasks() {
     const units=valid && defaults.appliance==='stove' && Number.isInteger(edit.units) && edit.units>=1 && edit.units<=6
       ? edit.units : defaults.units;
     return {...defaults,date,title,detail,gear,links,start,duration,units,end:start+duration};
-  }).sort((a,b)=>phaseOrder.indexOf(a.phase)-phaseOrder.indexOf(b.phase)||a.start-b.start);
+  });
+  const minutes=etaMinutes();
+  if(!ignoreEta&&minutes!==null&&!etaError(plan,minutes)){
+    const rest=plan.find(task=>task.id==='rest');
+    plan=plan.map(task=>{
+      if(task.id==='turkey')return {...task,duration:minutes-task.start,end:minutes,etaLinked:true};
+      if(['rest','gravy','carve'].includes(task.id)){
+        const start=minutes+(task.id==='carve'?rest.duration+5:0);
+        return {...task,start,end:start+task.duration,etaLinked:true};
+      }
+      return task;
+    });
+  }
+  return plan.sort((a,b)=>phaseOrder.indexOf(a.phase)-phaseOrder.indexOf(b.phase)||a.start-b.start);
 }
 function overlaps(a,b) {
   return a.start < b.end && b.start < a.end;
@@ -105,13 +167,13 @@ function taskCard(task,{edit=false,print=false,now=new Date()}={}) {
   const mark=print ? '<span class="print-check" aria-hidden="true"></span>' :
     '<input class="task-check" type="checkbox" data-kind="completed" data-id="'+task.id+'" aria-label="'+t('Mark {task} complete',{task:t(task.title)})+'"'+(state.completed[task.id]?' checked':'')+'>';
   const recipesText=task.links.map(id=>t(lookup[id].name)).join(' · ');
-  const editor=edit&&task.duration ? '<details class="task-edit"><summary>'+t('Adjust time')+'</summary>'+
+  const editor=edit&&task.duration&&!task.etaLinked ? '<details class="task-edit"><summary>'+t('Adjust time')+'</summary>'+
     '<form class="task-form" data-task="'+task.id+'"><label>'+t('Start')+' <input type="time" name="start" value="'+clockInput(task.start)+'" required></label>'+
     '<label>'+t('Minutes')+' <input type="number" name="duration" value="'+task.duration+'" min="1" max="1440" required></label>'+
     (task.id==='mac-prep'?'<label>'+t('Burners for this task')+' <select name="units"><option value="2"'+(task.units===2?' selected':'')+'>2</option><option value="1"'+(task.units===1?' selected':'')+'>1</option></select></label>':'')+
     '<button class="button" type="submit">'+t('Save timing')+'</button>'+
     (Object.hasOwn(state.taskEdits,task.id)?'<button class="button" type="button" data-action="reset-task" data-task="'+task.id+'">'+t('Reset timing')+'</button>':'')+
-    '<p class="edit-error" role="alert"></p></form></details>':'';
+    '<p class="edit-error" role="alert"></p></form></details>':edit&&task.etaLinked?'<p class="muted"><a href="#recipe/turkey">'+t('Linked to turkey finish estimate. Update or clear it on the turkey recipe to adjust these times.')+'</a></p>':'';
   return '<article class="task plan-task" data-task-card="'+task.id+'">'+
     '<div class="task-slot"><time>'+taskTime(task)+'</time>'+
     (task.duration?'<small>'+task.duration+' min</small>':'')+'</div><div>'+
@@ -190,8 +252,8 @@ function conflictPanel(plan) {
         issue.after.length?t('Runs into a dependent task ({tasks}).',{tasks:names(issue.after)}):'',
         issue.late?t('Ends after the 6:00 PM dinner target.'):''
       ].filter(Boolean);
-      const next=issue.tooMany?null:suggestedStart(task,plan);
-      const advice=issue.tooMany?t('Plan to cook the pasta and sauce sequentially, or make another burner available.') :
+      const next=issue.tooMany||task.etaLinked?null:suggestedStart(task,plan);
+      const advice=task.etaLinked?t('Review the turkey estimate or adjust the competing task.'):issue.tooMany?t('Plan to cook the pasta and sauce sequentially, or make another burner available.') :
         next===null?t('Try moving a related task or revising the duration.') :
         t('Try starting at {time}.',{time:clock(next)});
       return '<li><strong>'+t(task.title)+'</strong> · '+notes.join(' ')+' '+advice+'</li>';
@@ -236,7 +298,7 @@ function timeline(mode) {
     planLink()+'</nav>';
   const header=section('The dinner timeline','THURSDAY, NOVEMBER 26 · 6 PM',
     'Coordinate the Weber rotisserie, Ninja SP101 and stovetop. Times follow this device’s local clock.');
-  const target='<div class="dinner-target"><strong>'+t('Dinner target · Thu Nov 26 · 6:00 PM')+'</strong><span id="plan-count">'+planProgress(plan)+'</span></div>';
+  const target='<div class="dinner-target"><strong>'+t('Dinner target · Thu Nov 26 · 6:00 PM')+'</strong><span id="plan-count">'+planProgress(plan)+'</span></div>'+turkeyEtaSummary();
   if(mode==='kitchen')return header+target+nav+guestPanel()+'<div id="kitchen-live" tabindex="-1">'+kitchenContent(plan,now)+'</div>';
   const phases=phaseOrder.filter(id=>mode==='all'||mode===id);
   const phaseLists=phases.map(id=>'<section class="plan-section"><h2>'+t(phaseLabels[id])+'</h2>'+
@@ -331,7 +393,7 @@ function printPage() {
 }
 function printContent(selected) {
   const plan=plannedTasks();
-  const heading=section('Print Cooking Plan','THANKSGIVING AT HOME / 2026','Dinner target · Thu Nov 26 · 6:00 PM')+'<p>'+guestSummary()+' · '+portionSummary()+' · '+t('{weight} lb turkey',{weight:number(state.weight)})+'</p>';
+  const heading=section('Print Cooking Plan','THANKSGIVING AT HOME / 2026','Dinner target · Thu Nov 26 · 6:00 PM')+'<p>'+guestSummary()+' · '+portionSummary()+' · '+t('{weight} lb turkey',{weight:number(state.weight)})+'</p>'+turkeyEtaSummary();
   const group=(title,tasks)=>'<section class="print-group"><h2>'+t(title)+'</h2>'+
     tasks.map(task=>taskCard(task,{print:true})).join('')+'</section>';
   const phaseContent=phaseOrder.filter(id=>selected.includes('all')||selected.includes(id))

@@ -1,6 +1,6 @@
 const main = document.querySelector('main');
 const key = 'thanksgiving-at-home-2026-v1';
-const defaults = {language:"en", adults:10, children:6, portionsChanged:false, weight:14, shopping:{}, steps:{}, safety:{}, completed:{}, taskEdits:{}, burners:3};
+const defaults = {language:"en", adults:10, children:6, portionsChanged:false, weight:14, turkeyEta:null, shopping:{}, steps:{}, safety:{}, completed:{}, taskEdits:{}, burners:3};
 let state = {...defaults};
 let storageAvailable = true;
 try {
@@ -8,6 +8,7 @@ try {
   if (saved && typeof saved === 'object') state = {...defaults, ...saved};
 } catch { storageAvailable = false; }
 if (!Number.isFinite(state.weight) || state.weight < 8 || state.weight > 20) state.weight = defaults.weight;
+if(etaMinutes()===null)state.turkeyEta=null;
 for (const name of ['shopping','steps','safety','completed','taskEdits']) {
   if (!state[name] || typeof state[name] !== 'object') state[name] = {};
 }
@@ -153,7 +154,7 @@ function recipePage(r,activeStep) {
   return '<div class="recipe-nav"><a class="back" href="#menu">← Recipe book</a> <a class="back" href="#timeline/kitchen">Cooking mode</a></div>'+section(r.name,t(r.gear).toLocaleUpperCase(locale())+' · '+t(r.time).toLocaleUpperCase(locale()),r.desc)+
   '<div class="actions"><a class="button" href="#timeline/cook">Cooking timeline</a>'+action('Print recipe','print')+'</div>'+notice+
   (r.id === 'turkey' ? '<div class="panel">'+weightForm()+'<p class="muted">Brine volume is a starting estimate. Keep ¾ cup kosher salt per gallon of actual water. Scaled injection quantities are preparation amounts. Stop injecting if it pools or runs out.</p><a href="#safety">Open turkey safety checklist</a></div>' : '')+
-  guestPanel()+'<div class="split"><section class="panel"><div class="eyebrow">'+yieldText+'</div><h2>Ingredients</h2>'+
+  (r.id==='turkey'?turkeyEtaPanel():'')+guestPanel()+'<div class="split"><section class="panel"><div class="eyebrow">'+yieldText+'</div><h2>Ingredients</h2>'+
   sections.map(name=>'<h3 class="subhead">'+name+'</h3>'+r.ingredients.filter(item=>item[0]===name).map(item=>{
     const [,ingredient,,unit,note,optional]=item;
     return '<div class="ingredient"><span>'+ingredient+(optional?' <span class="chip">Optional</span>':'')+(note?'<small>'+note+'</small>':'')+'</span><strong>'+measure(portion(r,item),unit)+'</strong></div>';
@@ -316,6 +317,7 @@ main.addEventListener('change',event=>{
   if(kind==='completed')refreshPlanner();
 });
 main.addEventListener('submit',event=>{
+  if(event.target.matches('.eta-form')){saveTurkeyEta(event);return;}
   if(event.target.matches('.guest-form')){saveGuests(event);return;}
   if(!event.target.matches('.weight')){ handlePlannerSubmit(event); return; }
   event.preventDefault();
@@ -332,6 +334,13 @@ main.addEventListener('click',async event=>{
   const button=event.target.closest('[data-action]');
   if(!button)return;
   const actionId=button.dataset.action;
+  if(actionId==='clear-turkey-eta'){
+    state.turkeyEta=null;
+    save();
+    render();
+    main.querySelector('#turkey-eta').focus({preventScroll:true});
+    announce('Turkey finish estimate cleared. Previous task timings restored.');
+  }
   if(actionId==='review-portions'){
     state.portionsChanged=false;
     save();

@@ -57,3 +57,12 @@ h1,h2,h3{font-family:var(--serif);line-height:1.12}h1{font-size:clamp(2.35rem,6v
 .batch-note{color:var(--muted);font-weight:650}
 @media(min-width:700px){.guest-form{grid-template-columns:1fr 1fr}.guest-preview,.guest-error{grid-column:1/-1}}
 @media print{.guest-panel{display:none!important}}
+.turkey-eta p{max-width:70ch}
+.eta-form{display:flex;align-items:end;flex-wrap:wrap;gap:.6rem;margin:.7rem 0}
+.eta-form label{font-weight:700;flex-basis:100%}
+.eta-form input{min-height:48px;padding:.5rem .7rem;border:1px solid #9f907c;border-radius:.35rem;background:var(--white);color:var(--ink);font-size:1.1rem}
+.eta-form .button{min-height:48px}
+.eta-error{flex-basis:100%;color:var(--rust)}
+.eta-error:empty{display:none}
+.eta-summary{padding:.7rem .9rem;border-left:4px solid var(--green);background:var(--white)}
+@media print{.eta-form{display:none!important}.eta-summary{background:white;border-color:black}.eta-summary a{display:none}}

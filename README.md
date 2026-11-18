@@ -80,3 +80,19 @@ Cada niño cuenta como media porción de adulto. Los acompañamientos parten de 
 El peso del pavo lo escoges tú. La sugerencia usa 1¼ lb de pavo entero por porción de adulto. Si el total supera las 20 lb de capacidad de la Weber, planea cocinar el pavo adicional por separado. Revisa el espacio real de los moldes y las tandas en tus equipos.
 
 Si cambias los invitados, se actualizan las tandas estimadas. Los horarios y las duraciones que ajustaste a mano se conservan. Revisa cualquier cruce de horario que aparezca. El navegador guarda los invitados y conserva tus marcas. Después de un cambio, revisa las compras ya marcadas y lo que preparaste por si hace falta más cantidad.
+
+## Live turkey finish estimate
+
+On the turkey recipe, **Off the rotisserie** accepts a clock time for Thursday November 26. Enter the estimated time from your Combustion thermometer when you expect to remove the turkey, then press **Update timeline**. Update it again as the prediction changes.
+
+The estimate keeps the scheduled turkey start and changes its end and duration. It starts rest and gravy at that time, then schedules carving after the selected rest duration plus five minutes for setup. Other start times remain as entered. The app flags equipment conflicts and tasks that extend beyond the 6 PM dinner target. Check actual doneness separately from these scheduling estimates.
+
+Rest, gravy and carving use their saved durations. While the estimate is active, edit its value on the turkey page to adjust their start times. **Clear estimate** restores the prior schedule, including manual timings. The estimate is saved in this browser and appears in printed cooking plans. Checkmarks remain under your control.
+
+## Hora estimada de salida del pavo
+
+En la receta del pavo, **Salida del asador giratorio** permite ingresar una hora del jueves 26 de noviembre. Copia la hora estimada de tu termómetro Combustion y pulsa **Actualizar el cronograma**. Puedes actualizarla cuando cambie la predicción.
+
+El reposo y la salsa empiezan a esa hora. El corte se programa al terminar el reposo, más cinco minutos para preparar el área. El cronograma avisa si se cruzan tareas o si terminan después de las 6 p. m. Confirma por separado que el pavo esté bien cocido.
+
+La estimación se guarda en este navegador y aparece al imprimir. **Quitar la estimación** restaura los horarios anteriores, incluidos los ajustes manuales.
