@@ -1,23 +1,29 @@
 const dinnerMinute = 18 * 60;
-const applianceLabels = {weber:'22-inch Weber',ninja:'Ninja SP101',stove:'Stovetop'};
+const applianceLabels = {weber:'22-inch Weber',oven:'Gas oven',stove:'Stovetop'};
 const phaseLabels = {early:'Advance preparation',prep:'Wednesday, November 25',cook:'Thursday, November 26'};
 const phaseOrder = Object.keys(phaseLabels);
+const ovenRacks = 2;
 
 function estimatedBatches() {
-  const pasta=portion(lookup.mac,lookup.mac.ingredients.find(item=>item[1]==='Elbow macaroni'));
+  const pans=id=>portion(lookup[id],lookup[id].ingredients.find(item=>item[1]===aluminumPans));
   const bread=portion(lookup.bread,lookup.bread.ingredients.find(item=>item[1]==='French baguettes'));
   const vegetables=id=>portion(lookup[id],lookup[id].ingredients.find(item=>item[1]=== (id==='beans'?'Green beans':'Carrots')));
   return {
-    mac:Math.ceil(pasta / 0.75 - 1e-9),
-    bread:Math.ceil(bread * 4 / 3 - 1e-9),
+    mac:pans('mac'),
+    pastelon:pans('pastelon'),
+    bread:Math.ceil(bread * 4 / 3 / ovenRacks - 1e-9),
     beans:Math.ceil(vegetables('beans') / 1.5 - 1e-9),
     carrots:Math.ceil(vegetables('carrots') / 3 - 1e-9)
   };
 }
 function batchNote(task) {
   const batches=estimatedBatches();
-  if(task.id==='mac-bake')return t('Estimate: {count} shallow pan(s), 30 minutes each.',{count:batches.mac});
-  if(task.id==='bread')return t('Estimate: {count} bread batches, 10 minutes each.',{count:batches.bread});
+  if(task.id==='mac-bake'||task.id==='pastelon-bake'){
+    const pastelon=task.id==='pastelon-bake';
+    return t('Estimate: {count} aluminum pan(s), up to two at a time. Allow {minutes} minutes per batch.',
+      {count:pastelon?batches.pastelon:batches.mac,minutes:pastelon?40:30});
+  }
+  if(task.id==='bread')return t('Estimate: {count} oven batch(es), up to two trays at a time. Allow 10 minutes per batch.',{count:batches.bread});
   if(task.id==='beans'||task.id==='carrots')return t('Estimate: {count} skillet batch(es).',{count:batches[task.id]});
   return '';
 }
@@ -73,7 +79,9 @@ function turkeyEtaPanel() {
 function plannedTasks({ignoreEta=false}={}) {
   const batches=estimatedBatches();
   let plan=Object.values(schedule()).flat().map(([date,title,detail,gear,links,defaults])=>{
-    const estimates={'mac-bake':batches.mac*30,bread:batches.bread*10,beans:Math.max(10,batches.beans*7+1),carrots:batches.carrots*15};
+    const estimates={'mac-bake':Math.ceil(batches.mac/ovenRacks)*30,
+      'pastelon-bake':Math.ceil(batches.pastelon/ovenRacks)*40,
+      bread:batches.bread*10,beans:Math.max(10,batches.beans*7+1),carrots:batches.carrots*15};
     defaults={...defaults,duration:estimates[defaults.id] || defaults.duration};
     const edit=state.taskEdits[defaults.id];
     const valid=edit && Number.isInteger(edit.start) && Number.isInteger(edit.duration) &&
@@ -161,8 +169,24 @@ function taskTime(task) {
   const time=task.phase==='early' ? task.date+' · '+clock(task.start) : clock(task.start);
   return task.duration ? time+' – '+clock(task.end) : time;
 }
+function timingButton(task) {
+  return '<button type="button" class="timing-trigger" aria-haspopup="dialog">'+t(task.title)+'</button>';
+}
+function showTaskTiming(row) {
+  const task=plannedTasks().find(item=>item.id===row.dataset.timingTask);
+  const dialog=main.querySelector('#task-timing');
+  if(!task||!dialog)return;
+  dialog.innerHTML='<h2 id="task-timing-title">'+t(task.title)+'</h2>'+
+    '<p class="muted">'+(task.date || t(phaseLabels[task.phase]))+'</p>'+
+    '<dl><div><dt>'+t('Planned start')+'</dt><dd>'+clock(task.start)+'</dd></div>'+
+    '<div><dt>'+t('Planned end')+'</dt><dd>'+(task.duration ? clock(task.end) : t('No scheduled end'))+'</dd></div></dl>'+
+    (task.links.length?'<div class="task-links">'+task.links.map(id=>linkToStep(task,id)).join('')+'</div>':'')+
+    '<form method="dialog"><button class="button" type="submit" autofocus>'+t('Close')+'</button></form>';
+  row.querySelector('.timing-trigger').focus({preventScroll:true});
+  dialog.showModal();
+}
 function taskCard(task,{edit=false,print=false,now=new Date()}={}) {
-  const label='<h3>'+t(task.title)+'</h3>';
+  const label='<h3>'+(print?t(task.title):timingButton(task))+'</h3>';
   const status=taskStatus(task,now);
   const mark=print ? '<span class="print-check" aria-hidden="true"></span>' :
     '<input class="task-check" type="checkbox" data-kind="completed" data-id="'+task.id+'" aria-label="'+t('Mark {task} complete',{task:t(task.title)})+'"'+(state.completed[task.id]?' checked':'')+'>';
@@ -174,7 +198,7 @@ function taskCard(task,{edit=false,print=false,now=new Date()}={}) {
     '<button class="button" type="submit">'+t('Save timing')+'</button>'+
     (Object.hasOwn(state.taskEdits,task.id)?'<button class="button" type="button" data-action="reset-task" data-task="'+task.id+'">'+t('Reset timing')+'</button>':'')+
     '<p class="edit-error" role="alert"></p></form></details>':edit&&task.etaLinked?'<p class="muted"><a href="#recipe/turkey">'+t('Linked to turkey finish estimate. Update or clear it on the turkey recipe to adjust these times.')+'</a></p>':'';
-  return '<article class="task plan-task" data-task-card="'+task.id+'">'+
+  return '<article class="task plan-task" data-task-card="'+task.id+'"'+(print?'':' data-timing-task="'+task.id+'"')+'>'+
     '<div class="task-slot"><time>'+taskTime(task)+'</time>'+
     (task.duration?'<small>'+task.duration+' min</small>':'')+'</div><div>'+
     '<div class="task-heading">'+mark+label+'</div><span class="chip">'+equipmentText(task)+'</span>'+
@@ -269,13 +293,13 @@ function applianceChart(plan) {
   const tick=range>8*60?120:60;
   for(let min=first;min<=last;min+=tick)hours.push('<span style="left:'+percent(min)+'%">'+clock(min)+'</span>');
   return '<section class="panel appliance-chart"><h2>'+t('Appliance occupancy · Thursday')+'</h2><p>'+
-    t('The shaded area starts 90 minutes before dinner. Each bar shows one booking.')+
+    t('The shaded area starts 90 minutes before dinner. Select a booking to see its start and end times.')+
     '</p><div class="chart-scroll" tabindex="0" aria-label="'+t('Appliance occupancy · Thursday')+'"><div class="chart-body">'+
     '<div class="chart-axis">'+hours.join('')+'</div>'+
     Object.entries(applianceLabels).map(([id,name])=>'<h3>'+t(name)+'</h3>'+
       tasks.filter(task=>task.appliance===id).map(task=>{
         const warning=hasProblem(taskProblems(task,plan));
-        return '<div class="chart-row"><div>'+linkToStep(task,task.links[0],t(task.title))+'<small>'+taskTime(task)+
+        return '<div class="chart-row" data-timing-task="'+task.id+'"><div>'+timingButton(task)+'<small>'+taskTime(task)+
           (id==='stove'?' · '+t(task.units===1?'1 burner':'{count} burners',{count:task.units}):'')+
           '</small></div><div class="chart-track" style="--late:'+percent(990)+'%;--dinner:'+percent(dinnerMinute)+'%">'+
           '<span aria-hidden="true" class="chart-bar'+(warning?' chart-conflict':'')+'" style="left:'+percent(task.start)+
@@ -297,7 +321,8 @@ function timeline(mode) {
     '<a class="button'+(id===mode?' primary':'')+'" href="#timeline/'+id+'"'+(id===mode?' aria-current="page"':'')+'>'+t(label)+'</a>').join('')+
     planLink()+'</nav>';
   const header=section('The dinner timeline','THURSDAY, NOVEMBER 26 · 6 PM',
-    'Coordinate the Weber rotisserie, Ninja SP101 and stovetop. Times follow this device’s local clock.');
+    'Coordinate the Weber rotisserie, two-rack gas oven and stovetop. Times follow this device’s local clock.')+
+    '<dialog id="task-timing" class="panel timing-dialog" aria-labelledby="task-timing-title"></dialog>';
   const target='<div class="dinner-target"><strong>'+t('Dinner target · Thu Nov 26 · 6:00 PM')+'</strong><span id="plan-count">'+planProgress(plan)+'</span></div>'+turkeyEtaSummary();
   if(mode==='kitchen')return header+target+nav+guestPanel()+'<div id="kitchen-live" tabindex="-1">'+kitchenContent(plan,now)+'</div>';
   const phases=phaseOrder.filter(id=>mode==='all'||mode===id);
@@ -311,7 +336,7 @@ function timeline(mode) {
     '<button class="button" type="submit">'+t('Update capacity')+'</button></form></div>';
   return header+target+nav+guestPanel()+'<div id="planner-next">'+nextContent(plan,now)+'</div>'+
     (cooking?controls+
-    '<div class="callout"><p>'+t('Use separate hot holding for the first pan of mac and cheese and any turkey that finishes early. Gravy starts after the turkey actually comes off. Check doneness separately.')+'</p></div>'+
+    '<div class="callout"><p>'+t('Use separate hot holding for finished mac and cheese and any turkey that finishes early. Gravy starts after the turkey actually comes off. Check doneness separately.')+'</p></div>'+
     conflictPanel(plan)+applianceChart(plan):'')+(mode==='appliances'?equipmentLists:phaseLists);
 }
 function restoreEditor(id) {

@@ -15,12 +15,12 @@ If port 8080 is busy, run the following in PowerShell and open the URL printed b
 
 ## Use the plan
 
-- **Menu** opens the eight recipe pages. Each has prep and cooking steps you can check off.
+- **Menu** opens the recipe pages, including pastelón and baked mac and cheese. Each has prep and cooking steps you can check off.
 - **Shopping** combines ingredients and supplies. Use **Print / Save as PDF**, **Copy for Apple Notes**, or **Download Notes text**. Paste the copied text into a note, or use **File > Import to Notes** on a Mac to import the downloaded TXT. The export preserves checkmarks as text symbols. The live checkboxes are in the web app.
-- **Timeline** separates advance prep, Wednesday, and Thursday. Check off completed tasks, use **By appliance** to see bookings, and open **Cooking mode** for current and next tasks. A link in each task jumps to the relevant recipe step.
+- **Timeline** separates advance prep, Wednesday, and Thursday. Tap a task or chart bar to see its planned start and end. Check off completed tasks, use **By appliance** to see bookings, and open **Cooking mode** for current and next tasks.
 - **Kitchen checks** includes overnight refrigerator drying, food temperatures, and the thermometer checklist.
 - **Turkey weight** starts at 14 lb. Changing it updates the bird, injection quantities, shopping list, and thawing and grill schedule. Check the loaded spit clearance before cooking.
-- Open **Who’s coming?** to choose adults and children using the sliders or number boxes, then press **Update portions**. Each child counts as half an adult portion. The default of 10 adults and 6 children gives 13 adult portions. Sides scale from a 9-portion base, with whole produce, garlic cloves and loaves rounded up. The Ninja schedule estimates shallow mac pans and bread batches from those quantities. It starts with three stovetop burners and a separate setup that can hold food at 140°F or above.
+- Open **Who’s coming?** to choose adults and children using the sliders or number boxes, then press **Update portions**. Each child counts as half an adult portion. The default of 10 adults and 6 children gives 13 adult portions. Sides scale from a 9-portion base, with whole produce, garlic cloves and loaves rounded up. The gas oven schedule allows one mac pan or bread tray per rack, up to two per batch.
 
 The earlier chat provided the green beans, carrots, bread and salad recipes. The turkey, gravy, rice and mac and cheese pages are labeled reconstructions from the available menu notes and refinements.
 
@@ -32,9 +32,9 @@ Para abrir la aplicación, extrae el ZIP. Abre la carpeta Thanksgiving-2026 desd
 
 Si ya tenías una versión anterior, detén el servidor. Copia todos los archivos de la nueva carpeta a la carpeta que abriste en Visual Studio y acepta reemplazar los archivos existentes. Vuelve a ejecutar **node server.cjs** y recarga la página. Si el puerto 8080 está ocupado, puedes elegir otro, pero cada dirección guarda sus propias marcas.
 
-- **Menú** abre las ocho recetas con listas para marcar los pasos. El pavo empieza en 14 lb y puedes cambiar el peso. Abre **¿Quiénes vienen?**, ajusta los adultos y niños y pulsa **Actualizar las porciones**. Cada niño cuenta como media porción de adulto. El plan empieza con 10 adultos y 6 niños, para 13 porciones de adulto.
+- **Menú** abre las recetas, incluidos el pastelón y los coditos al horno, con listas para marcar los pasos. El pavo empieza en 14 lb y puedes cambiar el peso. Abre **¿Quiénes vienen?**, ajusta los adultos y niños y pulsa **Actualizar las porciones**. Cada niño cuenta como media porción de adulto. El plan empieza con 10 adultos y 6 niños, para 13 porciones de adulto.
 - **Compras** reúne los ingredientes. Puedes imprimir, guardar en PDF, copiar para Notas de Apple o descargar la lista en texto. En una Mac, importa el archivo TXT desde **Archivo > Importar a Notas**. Las marcas exportadas son símbolos de texto.
-- **Cronograma** reúne la descongelación, el día de preparación y el día de cocinar. El plan empieza con tres quemadores, la Weber y la Ninja SP101, más un equipo aparte para mantener la comida a 140 °F o más. Imprime el plan completo o un solo día.
+- **Cronograma** reúne la descongelación, el día de preparación y el día de cocinar. Pulsa una tarea o una barra del gráfico para ver la hora prevista de inicio y fin. El plan usa tres quemadores, la Weber y un horno de gas con dos rejillas.
 - **Seguridad en la cocina** incluye el secado de la piel en la nevera y las verificaciones con el termómetro.
 
 Las recetas de pavo, salsa, arroz y coditos se reconstruyeron a partir de las notas disponibles. El chat anterior sí incluía las recetas de habichuelas, zanahorias, pan de ajo y ensalada.
@@ -67,7 +67,7 @@ The same scaled ingredient values appear in recipe directions, the combined shop
 
 Turkey weight stays under your control. The app suggests a total using 1¼ lb of whole turkey per adult-equivalent portion. A suggestion over 20 lb calls for additional turkey cooked separately from the Weber rotisserie. The selected weight continues to determine injection, thawing and turkey cooking estimates.
 
-Mac, bread and skillet batch estimates update with guest counts. Existing task start times and manually edited durations stay as entered, so a larger menu can produce conflicts that need review. Batch estimates assume ¾ lb of dry pasta per shallow pan, about four bread batches per three baguettes, up to 1½ lb beans per skillet batch and 3 lb carrots per batch. Verify actual fit in your equipment.
+Pastelón, mac, bread and skillet batch estimates update with guest counts. Existing task start times and manually edited durations stay as entered, so a larger menu can produce conflicts that need review. The shopping list totals the disposable 9 × 13-inch aluminum pans for pastelón and mac. The oven schedule estimates one pan or tray per rack. Verify actual fit in your equipment.
 
 Guest counts save in the same browser as your checklist progress. Changing portions preserves all checks and shows a reminder to review any purchased ingredients or completed prep. Press **Reviewed quantities** to dismiss that reminder. Use the same browser on your phone for the holiday.
 

@@ -105,7 +105,6 @@ const sources = {
   hold:'https://ask.fsis.usda.gov/article/How-do-I-keep-foods-safe-at-a-buffet',
   weber:'https://www.weber.com/US/en/accessories/grill-tools-and-cookware/rotisserie-2290/2290.html',
   grill:'https://www.weber.com/US/en/recipes/poultry/rotisserie-turkey/weber-2377506.html',
-  ninja:'https://support.ninjakitchen.co.uk/hc/en-gb/article_attachments/5160797252252/SP101UK_QSG_MP_Mv1_200903_LR__3_.pdf',
   base:'https://www.betterthanbouillon.com/products/roasted-turkey-base/'
 };
 const lookup = Object.fromEntries(recipes.map(recipe => [recipe.id,recipe]));
@@ -134,6 +133,10 @@ function portion(recipe, item) {
   const [,name,base,unit] = item;
   if (base === null) return null;
   let amount = recipe.id === 'turkey' ? base * state.weight / 12 : base * sideFactor();
+  if (name === aluminumPans && recipe.id === 'mac') {
+    const pasta = recipe.ingredients.find(row=>row[1]==='Elbow macaroni');
+    return Math.ceil(portion(recipe,pasta) / 0.75);
+  }
   if (['cloves','sprigs','leaves',''].includes(unit) && name !== 'Red onion') return Math.ceil(amount);
   return roundIngredient(amount,unit,recipe.id,name);
 }
@@ -160,8 +163,8 @@ function menu() {
   const bought = list.filter(item => state.shopping[item.name]).length;
   const progress = Math.round(bought/list.length*100);
   const art = document.querySelector('#art').innerHTML;
-  return '<section class="hero"><div class="hero-copy"><div class="kicker">THURSDAY, NOVEMBER 26 · DINNER AT 6 PM</div><h1>Thanksgiving<br>at Home.</h1><p>A rotisserie turkey, seven favorites and a kitchen plan for getting everything to the table.</p><div class="actions"><a class="button primary" href="#timeline/cook">Open cooking plan →</a><a class="button secondary" href="#shopping">Shop the menu</a><a class="button secondary" href="#print">Print Cooking Plan</a></div></div><div class="hero-art">'+art+'</div></section>'+
-  '<div class="summary"><div><small>THE TABLE</small><strong>'+guestSummary()+'</strong><small>'+portionSummary()+'</small></div><div><small>THE MENU</small><strong>8 recipes</strong><small>One holiday dinner</small></div><div><small>THE MAIN</small><strong>'+t('{weight} lb turkey',{weight:number(state.weight)})+'</strong><a href="#recipe/turkey">Adjust weight</a></div><div><small>SHOPPING</small><strong>'+t('{count} of {total}',{count:bought,total:list.length})+'</strong><progress value="'+progress+'" max="100" aria-label="Shopping progress"></progress></div></div>'+
+  return '<section class="hero"><div class="hero-copy"><div class="kicker">THURSDAY, NOVEMBER 26 · DINNER AT 6 PM</div><h1>Thanksgiving<br>at Home.</h1><p>A rotisserie turkey, holiday sides and a plan to get everything to the table.</p><div class="actions"><a class="button primary" href="#timeline/cook">Open cooking plan →</a><a class="button secondary" href="#shopping">Shop the menu</a><a class="button secondary" href="#print">Print Cooking Plan</a></div></div><div class="hero-art">'+art+'</div></section>'+
+  '<div class="summary"><div><small>THE TABLE</small><strong>'+guestSummary()+'</strong><small>'+portionSummary()+'</small></div><div><small>THE MENU</small><strong>'+t('{count} recipes',{count:recipes.length})+'</strong><small>One holiday dinner</small></div><div><small>THE MAIN</small><strong>'+t('{weight} lb turkey',{weight:number(state.weight)})+'</strong><a href="#recipe/turkey">Adjust weight</a></div><div><small>SHOPPING</small><strong>'+t('{count} of {total}',{count:bought,total:list.length})+'</strong><progress value="'+progress+'" max="100" aria-label="Shopping progress"></progress></div></div>'+
   guestPanel(true)+'<div class="section-head"><div><div class="eyebrow">THE RECIPE BOOK</div><h2>On the table</h2></div></div><div class="grid">'+recipes.map((r,i)=>'<a class="card" href="#recipe/'+r.id+'"><div class="card-art '+r.color+'"><span class="eyebrow">'+t('RECIPE 0{index}',{index:i+1})+'</span><span aria-hidden="true">'+r.icon+'</span></div><div class="card-copy"><h3>'+r.name+'</h3><p>'+r.desc+'</p><span class="chip">'+r.gear+'</span> <span class="chip">'+r.time+'</span></div></a>').join('')+'</div>';
 }
 function recipePage(r,activeStep) {
@@ -224,7 +227,7 @@ function groceries() {
 function shopping() {
   const list=groceries();
   const count=list.flatMap(([,items])=>items).length;
-  return section('Shopping list','THE MARKET LIST','Combined across all eight recipes. Your checks stay in this browser.')+
+  return section('Shopping list','THE MARKET LIST','Combined across the whole menu. Your checks stay in this browser.')+
   guestPanel()+'<div class="panel">'+weightForm()+'<p id="shop-progress" class="muted" data-total="'+count+'"></p></div>'+
   '<div class="actions">'+action('Print / Save as PDF','print')+action('Download Notes text','download')+action('Copy for Apple Notes','copy')+'</div><p id="export-status" class="muted">Notes export is a plain-text list with checkbox symbols and your current checkmarks.</p>'+
   '<div class="grid">'+list.map(([name,items])=>'<section class="panel"><h2>'+name+'</h2>'+items.map(item=>check('shopping',item.name,'<strong>'+t(item.name)+'</strong>',item.amount+(item.dishes?' · '+item.dishes:''))).join('')+'</section>').join('')+'</div>';
@@ -241,7 +244,7 @@ const prepTasks = [
  [null,'Unpack, pat dry and refrigerate the turkey uncovered','Once fully thawed, discard the bag liquid and remove the neck and giblets. Pat the skin and cavity dry with paper towels. Set on a wire rack in a rimmed tray, uncovered on the lowest refrigerator shelf at 40°F or below, away from ready-to-eat foods. Let the skin dry overnight.','Refrigerator',['turkey'],{"id":"dry-turkey","phase":"prep","start":990,"duration":15,"appliance":"","units":0,"step":"prep-1","after":[]}],
  [null,'Blanch vegetables and prep the sofrito','Use separate ice baths or refresh the ice water. Drain, dry and refrigerate. Dice the onion and mince garlic for the rice.','Stovetop',['beans','carrots','rice'],{"id":"vegetables","phase":"prep","start":840,"duration":45,"appliance":"stove","units":1,"step":"prep-0","after":[]}],
  [null,'Mix the garlic butter and vinaigrette','Refrigerate both. Wash the salad produce and keep it whole. Leave baguettes unsliced.','Cold prep',['bread','salad'],{"id":"mix","phase":"prep","start":900,"duration":30,"appliance":"","units":0,"step":"prep-0","after":[]}],
- [null,'Shred cheese and check pan fit','Check the batch estimates on Thursday’s timeline after updating your guest count. Set out a whisk, fat separator, injector, trussing twine, drip pan and thermometers.','Ninja SP101 · cold fit',['mac','bread','gravy','turkey'],{"id":"cheese","phase":"prep","start":960,"duration":20,"appliance":"","units":0,"step":"prep-0","after":[]}],
+ [null,'Shred cheese and check pan fit','Check that your baking dishes and bread trays fit on both oven racks. Review Thursday’s batch estimates after updating the guest count. Set out a whisk, fat separator, injector, trussing twine, drip pan and thermometers.','Gas oven',['mac','bread','gravy','turkey'],{"id":"cheese","phase":"prep","start":960,"duration":20,"appliance":"","units":0,"step":"prep-0","after":[]}],
 ];
 function timeOf(minutes) {
   const hour=Math.floor(minutes/60);
@@ -259,11 +262,14 @@ function schedule() {
       [null,'Keep the turkey chilled until grill prep','Leave the turkey on its rack in the refrigerator at 40°F or below. Prepare the unsalted butter, herbs and injector for later. Pat away any remaining skin moisture just before seasoning.','Refrigerator',['turkey'],{"id":"keep-chilled","phase":"cook","start":540,"duration":5,"appliance":"","units":0,"step":"cook-0","after":[]}],
       [null,'Set up the Weber and prep the turkey','Light the charcoal outdoors. Set up indirect heat and position the drip pan. Inject, truss and check balance and clearance before turning on the motor.','22-inch Weber',['turkey'],{"id":"setup","phase":"cook","start":on-45,"duration":45,"appliance":"weber","units":1,"step":"cook-1","after":[]}],
       [null,'Turkey on the spit','Keep the kettle near 350–400°F. Check kettle heat periodically and replenish fuel as needed.','22-inch Weber',['turkey'],{"id":"turkey","phase":"cook","start":on,"duration":cookMinutes,"appliance":"weber","units":1,"step":"cook-3","after":["setup"]}],
-      [null,'Make the mac and cheese','Use up to two burners for pasta and sauce, then divide between shallow pans. Refrigerate waiting pans while one bakes.','Stovetop',['mac'],{"id":"mac-prep","phase":"cook","start":930,"duration":30,"appliance":"stove","units":2,"step":"cook-0","after":[]}],
-      [null,'Start baking mac and cheese','Ninja BAKE at 350°F. Budget 25–30 minutes per shallow pan, longer if cold. Verify the center of any chilled pan reaches 165°F. Keep finished pans at 140°F or above in a separate holding setup.','Ninja SP101',['mac'],{"id":"mac-bake","phase":"cook","start":960,"duration":60,"appliance":"ninja","units":1,"step":"cook-2","after":["mac-prep"]}],
+      [null,'Cook the pastelón filling and plantains','Cook the beef picadillo and shallow-fry the sliced ripe plantains in batches.','Stovetop',['pastelon'],{"id":"pastelon-prep","phase":"cook","start":875,"duration":50,"appliance":"stove","units":1,"step":"cook-0","after":[]}],
+      [null,'Assemble the pastelón','Layer the plantains, picadillo, eggs and cheese in the disposable pans. Preheat the oven to 350°F.','Counter',['pastelon'],{"id":"pastelon-assemble","phase":"cook","start":925,"duration":20,"appliance":"","units":0,"step":"cook-2","after":["pastelon-prep"]}],
+      [null,'Bake the pastelón','Bake at 350°F until the center reaches 165°F. Let it set before cutting and hold at 140°F or above until dinner.','Gas oven',['pastelon'],{"id":"pastelon-bake","phase":"cook","start":945,"duration":40,"appliance":"oven","units":1,"step":"cook-3","after":["pastelon-assemble"]}],
+      [null,'Make the mac and cheese','Use up to two burners for pasta and sauce, then divide between shallow pans. Refrigerate assembled pans until the oven is ready.','Stovetop',['mac'],{"id":"mac-prep","phase":"cook","start":930,"duration":30,"appliance":"stove","units":2,"step":"cook-0","after":[]}],
+      [null,'Start baking mac and cheese','Preheat the gas oven to 350°F before the start time. Bake up to two disposable aluminum pans together, one per rack. Allow extra time for chilled pans and verify each chilled pan reaches 165°F in the center. Hold finished pans at 140°F or above.','Gas oven',['mac'],{"id":"mac-bake","phase":"cook","start":990,"duration":30,"appliance":"oven","units":1,"step":"cook-2","after":["mac-prep"]}],
       [null,'Chop and chill the salad','Cover and refrigerate. Keep the dressing separate.','Cold prep',['salad'],{"id":"chop","phase":"cook","start":985,"duration":10,"appliance":"","units":0,"step":"cook-0","after":[]}],
       [null,'Start rice and soften garlic butter','Allow about 35 minutes for the rice, including covered rest. Hold cooked rice at 140°F or above as needed.','Stovetop',['rice','bread'],{"id":"rice","phase":"cook","start":995,"duration":35,"appliance":"stove","units":1,"step":"cook-0","after":[]}],
-      [null,'Slice and butter bread','Ninja BAKE at 375°F after the mac clears. Use a single layer, 6–9 minutes per batch. Check the batch estimate below and adjust the booking to suit your actual bread slices and pan. Transfer finished bread to a basket.','Ninja SP101',['bread'],{"id":"bread","phase":"cook","start":1020,"duration":40,"appliance":"ninja","units":1,"step":"cook-0","after":["mac-bake"]}],
+      [null,'Bake the garlic bread','Slice and butter the bread before this slot. Once the mac and cheese comes out, bring the oven to 375°F. Toast the slices in a single layer on up to two trays, one per rack. Transfer finished bread to a basket.','Gas oven',['bread'],{"id":"bread","phase":"cook","start":1045,"duration":20,"appliance":"oven","units":1,"step":"cook-1","after":["mac-bake"]}],
       [null,'Verify turkey, then rest','Check breast, thigh and wing for at least 165°F each. Rest 20–30 minutes once done. If it runs late, keep cooking and move gravy and carving back.','22-inch Weber · temperature gate',['turkey','gravy'],{"id":"rest","phase":"cook","start":1025,"duration":30,"appliance":"","units":0,"step":"cook-4","after":["turkey"]}],
       [null,'Glaze the carrots','Cook in the larger skillet and transfer to a covered dish. Keep hot for service.','Stovetop',['carrots'],{"id":"carrots","phase":"cook","start":1030,"duration":15,"appliance":"stove","units":1,"step":"cook-0","after":[]}],
       [null,'Make the gravy','Use the collected pan drippings. Allow about 15 minutes while the turkey rests.','Stovetop',['gravy'],{"id":"gravy","phase":"cook","start":1025,"duration":15,"appliance":"stove","units":1,"step":"cook-0","after":["turkey"]}],
@@ -287,7 +293,7 @@ function safety() {
   return section('Kitchen checks','REFRIGERATOR · KETTLE · THERMOMETERS','Keep the turkey cold during prep and verify doneness in three places before it leaves the grill.')+
   '<div class="actions">'+action('Print safety checks','print')+'</div><div class="split"><div>'+
   '<section class="panel"><h2>Overnight refrigerator drying</h2><p>After thawing, remove the packaging, neck and giblets, and pat the turkey dry with paper towels. Put it uncovered on a wire rack inside a rimmed tray on the lowest refrigerator shelf at 40°F or below. Keep it apart from ready-to-eat food and catch all drips.</p><p>Cook within 1–2 days of full thawing, including the overnight drying time. Skip rinsing poultry. Clean and sanitize tools and surfaces, and wash your hands before handling cooked food.</p><p>'+source('thaw','USDA thawing')+' · '+source('washing','USDA poultry handling')+'</p></section>'+
-  '<section class="panel"><h2>Equipment & temperature</h2><p>'+source('weber','Weber 22-inch rotisserie')+' · '+source('grill','Weber indirect rotisserie setup')+' · '+source('ninja','Ninja SP101 quick-start guide (UK)')+'</p><p>'+source('temp','FoodSafety.gov turkey temperatures')+' · '+source('hold','USDA hot and cold holding')+' · '+source('base','Better Than Bouillon turkey base')+'</p></section></div>'+
+  '<section class="panel"><h2>Equipment & temperature</h2><p>'+source('weber','Weber 22-inch rotisserie')+' · '+source('grill','Weber indirect rotisserie setup')+'</p><p>'+source('temp','FoodSafety.gov turkey temperatures')+' · '+source('hold','USDA hot and cold holding')+' · '+source('base','Better Than Bouillon turkey base')+'</p></section></div>'+
   '<section class="panel"><h2>Thermometer checklist</h2>'+safetyChecks.map(args=>check('safety',...args)).join('')+'</section></div>';
 }
 
@@ -349,6 +355,12 @@ main.addEventListener('submit',event=>{
   announce(t('Plan updated for a {weight} pound turkey.',{weight:number(next)}));
 });
 main.addEventListener('click',async event=>{
+  const timingRow=event.target.closest('[data-timing-task]');
+  const control=event.target.closest('a,button,input,select,textarea,label,summary,form');
+  if(timingRow&&(!control||control.matches('.timing-trigger'))){
+    showTaskTiming(timingRow);
+    return;
+  }
   const button=event.target.closest('[data-action]');
   if(!button)return;
   const actionId=button.dataset.action;

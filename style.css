@@ -16,6 +16,17 @@ h1,h2,h3{font-family:var(--serif);line-height:1.12}h1{font-size:clamp(2.35rem,6v
 .plan-task{grid-template-columns:1fr;gap:.3rem}.task-slot{display:flex;flex-wrap:wrap;align-items:baseline;gap:.15rem .6rem}.task-slot time{max-width:none}.task-slot small{color:var(--muted)}.task-heading{display:flex;align-items:center;gap:.55rem}.task-heading h3{margin:0}.task-heading + .chip{margin-top:.3rem}.task-check{appearance:auto;accent-color:var(--green);width:1.4rem;height:1.4rem;flex:none;margin:.5rem .1rem .5rem 0;cursor:pointer}.task-heading:has(input:checked) h3{text-decoration:line-through;color:var(--muted)}
 .task-status[data-value="In progress"]{background:#f5d387;color:#392a0f}.task-status[data-value="Completed"]{background:#d8e6cf;color:#253a24}.task-status[data-value="Overdue"]{background:#efcabb;color:#5d271a}.no-conflicts{border-left:4px solid var(--green)}.conflicts{border-left:4px solid var(--rust)}.conflicts li+li{margin-top:.45rem}
 .chart-scroll{overflow-x:auto}.chart-body{--label-width:11rem;min-width:590px;padding:.35rem 2.3rem .35rem .1rem}.chart-axis{position:relative;margin-left:var(--label-width);height:1.35rem;font-size:.68rem;color:var(--muted)}.chart-axis span{position:absolute;white-space:nowrap;transform:translateX(-50%)}.chart-row{display:grid;grid-template-columns:var(--label-width) 1fr;align-items:center;min-height:2.8rem;border-top:1px solid var(--line);font-size:.81rem}.chart-row>div:first-child{padding-right:.45rem}.chart-row small{display:block;color:var(--muted)}.chart-track{position:relative;height:1.35rem;border-radius:.2rem;background:linear-gradient(to right,#eee5d6 var(--late),#f6d8a1 var(--late),#f6d8a1 var(--dinner),#edc7bd var(--dinner))}.chart-bar{position:absolute;top:.25rem;height:.85rem;background:var(--green);border-radius:.25rem;min-width:2px}.chart-conflict{background:repeating-linear-gradient(135deg,#87331f 0 6px,#bf6246 6px 12px)}
+.timing-trigger{padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;text-decoration:underline;text-underline-offset:.18em}
+.chart-row,.plan-task[data-timing-task]{cursor:pointer}
+.chart-row .timing-trigger{color:var(--rust)}
+.timing-dialog{width:min(26rem,calc(100% - 2rem));margin:auto;padding:1.25rem;color:var(--ink)}
+.timing-dialog::backdrop{background:#2b241d80}
+.timing-dialog h2{font-size:1.65rem}
+.timing-dialog dl{margin:1rem 0}
+.timing-dialog dl div{display:flex;justify-content:space-between;gap:.75rem;padding:.5rem 0;border-top:1px solid var(--line)}
+.timing-dialog dt{color:var(--muted)}
+.timing-dialog dd{margin:0;text-align:right;font-weight:750}
+.timing-dialog form{display:flex;justify-content:flex-end;margin-top:1rem}
 .kitchen-now .plan-task p{font-size:1.08rem}.kitchen-now .task-links a,.recipe-nav a{padding:.45rem 0}.recipe-nav{display:flex;gap:1.1rem}.split [id^="step-"] .check{font-size:1.07rem;min-height:48px;align-items:flex-start}.active-step{outline:2px solid var(--green);border-radius:.35rem;background:#edf1e6;padding:0 .45rem}.print-form fieldset{min-width:0;margin:0}.print-form legend{padding:0 .35rem;font:700 1.2rem var(--serif)}.print-form .check{min-height:44px}
 #print-output{display:none}
 @media(min-width:700px){.plan-task{grid-template-columns:11rem 1fr;gap:.85rem}.task-slot{display:block}.task-slot small{display:block}}
@@ -24,7 +35,7 @@ h1,h2,h3{font-family:var(--serif);line-height:1.12}h1{font-size:clamp(2.35rem,6v
   html,body{color:#000;background:#fff}
   body:has(#print-output:not(:empty))>main{display:none!important}
   #print-output:not(:empty){display:block}
-  .dinner-target,.planner-tabs,.task-edit,.planner-controls,.appliance-chart,.conflicts,.no-conflicts,.print-form,#planner-next,.task-status,.recipe-nav{display:none!important}
+  .dinner-target,.planner-tabs,.task-edit,.planner-controls,.appliance-chart,.conflicts,.no-conflicts,.print-form,#planner-next,.task-status,.recipe-nav,.timing-dialog{display:none!important}
   #print-output,.plan-task,.chip,.print-check{color:#000;background:#fff}
   #print-output h2{font-size:16pt;margin:.7em 0 .35em;break-after:avoid}
   #print-output h3{font-size:12pt;break-after:avoid}
