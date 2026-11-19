@@ -109,31 +109,39 @@ const sources = {
   base:'https://www.betterthanbouillon.com/products/roasted-turkey-base/'
 };
 const lookup = Object.fromEntries(recipes.map(recipe => [recipe.id,recipe]));
-const commonFractions = { '1/2':'½', '1/3':'⅓', '2/3':'⅔', '1/4':'¼', '3/4':'¾',
-  '1/5':'⅕', '2/5':'⅖', '3/5':'⅗', '4/5':'⅘', '1/6':'⅙', '5/6':'⅚',
-  '1/8':'⅛', '3/8':'⅜', '5/8':'⅝', '7/8':'⅞' };
+const kitchenFractions = [[0,''],[1/8,'⅛'],[1/4,'¼'],[1/3,'⅓'],[3/8,'⅜'],
+  [1/2,'½'],[5/8,'⅝'],[2/3,'⅔'],[3/4,'¾'],[7/8,'⅞'],[1,'']];
+function kitchenFraction(value) {
+  const remainder=value-Math.floor(value);
+  return kitchenFractions.reduce((best,fraction)=>
+    Math.abs(remainder-fraction[0])<=Math.abs(remainder-best[0])+1e-9?fraction:best);
+}
 function number(value) {
-  const whole=Math.floor(value+1e-9);
-  const remainder=value-whole;
-  if(remainder<1e-9)return String(whole);
-  for(let denominator=2;denominator<=192;denominator++){
-    const numerator=Math.round(remainder*denominator);
-    if(Math.abs(remainder-numerator/denominator)<1e-9){
-      const fraction=numerator+'/'+denominator;
-      return [whole||'',commonFractions[fraction]||fraction].filter(Boolean).join(' ');
-    }
+  const [fraction,symbol]=kitchenFraction(value);
+  const whole=Math.floor(value)+(fraction===1?1:0);
+  return [whole||'',symbol].filter(Boolean).join(' ')||'0';
+}
+function roundIngredient(amount,unit,recipeId,name) {
+  if(/^cups?$/.test(unit)){
+    if(amount<1/8)return Math.max(1/8,Math.round(amount*48*8)/8)/48;
+    return Math.floor(amount)+kitchenFraction(amount)[0];
   }
-  return number(Math.round(value*48)/48);
+  // Half-ounce cheese totals divide into eighth-ounce topping quantities.
+  const step=unit==='oz'?1/2:recipeId==='beans'&&name==='Unsalted butter'?1/4:1/8;
+  return Math.max(step,Math.round((amount+1e-9)/step)*step);
 }
 function portion(recipe, item) {
   const [,name,base,unit] = item;
   if (base === null) return null;
   let amount = recipe.id === 'turkey' ? base * state.weight / 12 : base * sideFactor();
-  if (['cloves','sprigs','leaves',''].includes(unit) && name !== 'Red onion') amount = Math.ceil(amount);
-  return amount;
+  if (['cloves','sprigs','leaves',''].includes(unit) && name !== 'Red onion') return Math.ceil(amount);
+  return roundIngredient(amount,unit,recipe.id,name);
 }
 const measure = (amount,unit) => {
   if (amount === null) return '';
+  if(amount>0&&amount<1/8&&/^cups?$/.test(unit)){amount*=48;unit='tsp';}
+  if(amount>0&&amount<1/8&&unit==='tbsp'){amount*=3;unit='tsp';}
+  if(amount>0&&amount<1/8)amount=1/8;
   const displayUnit = /^cups?$/.test(unit) ? (amount > 1 ? 'cups' : 'cup') : unit;
   return [number(amount),t(displayUnit)].filter(Boolean).join(' ');
 };
@@ -164,7 +172,7 @@ function recipePage(r,activeStep) {
   return '<div class="recipe-nav"><a class="back" href="#menu">← Recipe book</a> <a class="back" href="#timeline/kitchen">Cooking mode</a></div>'+section(r.name,t(r.gear).toLocaleUpperCase(locale())+' · '+t(r.time).toLocaleUpperCase(locale()),r.desc)+
   '<div class="actions"><a class="button" href="#timeline/cook">Cooking timeline</a>'+action('Print recipe','print')+'</div>'+notice+
   (r.id === 'turkey' ? '<div class="panel">'+weightForm()+'<p class="muted">Your turkey already contains a salted solution. Dry the skin overnight in the refrigerator, then add the herb-butter injection on cooking day. Use unsalted butter and taste the injection before raw contact. Stop injecting if it pools or runs out.</p><a href="#safety">Open turkey safety checklist</a></div>' : '')+
-  (r.id==='turkey'?turkeyEtaPanel():'')+guestPanel()+'<div class="split"><section class="panel"><div class="eyebrow">'+yieldText+'</div><h2>Ingredients</h2>'+
+  (r.id==='turkey'?turkeyEtaPanel():'')+guestPanel()+'<div class="split"><section class="panel"><div class="eyebrow">'+yieldText+'</div><h2>Ingredients</h2><p class="muted">Scaled amounts use common kitchen measures.</p>'+
   sections.map(name=>'<h3 class="subhead">'+name+'</h3>'+r.ingredients.filter(item=>item[0]===name).map(item=>{
     const [,ingredient,,unit,note,optional]=item;
     return '<div class="ingredient"><span>'+ingredient+(optional?' <span class="chip">Optional</span>':'')+(note?'<small>'+note+'</small>':'')+'</span><strong>'+measure(portion(r,item),unit)+'</strong></div>';

@@ -416,5 +416,6 @@ const spanish = {
   "After thawing, remove the packaging, neck and giblets, and pat the turkey dry with paper towels. Put it uncovered on a wire rack inside a rimmed tray on the lowest refrigerator shelf at 40°F or below. Keep it apart from ready-to-eat food and catch all drips.": "Después de descongelarlo, retira el empaque, el pescuezo y las menudencias, y seca el pavo con papel toalla. Ponlo destapado sobre una rejilla dentro de una bandeja con borde en la repisa de abajo de la nevera a 40 °F o menos. Mantenlo separado de la comida lista para comer y recoge todos los jugos.",
   "Cook within 1–2 days of full thawing, including the overnight drying time. Skip rinsing poultry. Clean and sanitize tools and surfaces, and wash your hands before handling cooked food.": "Cocínalo en un plazo de 1 a 2 días después de que se descongele por completo, contando la noche de secado de la piel. Evita enjuagar el pavo. Lava y desinfecta los utensilios y superficies, y lávate las manos antes de manipular comida cocida.",
   "USDA poultry handling": "USDA: manejo de aves crudas",
-  "Already contains a brine solution.": "Ya contiene una solución de salmuera."
+  "Already contains a brine solution.": "Ya contiene una solución de salmuera.",
+  "Scaled amounts use common kitchen measures.": "Las cantidades ajustadas usan medidas comunes de cocina."
 };

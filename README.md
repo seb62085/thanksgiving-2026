@@ -113,3 +113,15 @@ El pavo ya contiene una solución con sal. El miércoles por la tarde, cuando se
 El jueves prepara la inyección con mantequilla sin sal, agua y hierbas frescas. La cantidad de Better Than Bouillon indicada es un máximo. Prueba la mezcla antes de que toque el pavo crudo y usa menos base si hace falta. Prueba también los jugos de la bandeja antes de agregar base a la salsa.
 
 Las compras incluyen rejilla, bandeja con borde, papel toalla y hielo para los vegetales. Los pasos nuevos empiezan sin marcar. Los invitados, el peso del pavo, la hora estimada de salida y las otras listas se conservan.
+
+## Common cooking fractions
+
+Scaled ingredients round to familiar kitchen measures. Cups use halves, thirds, quarters and eighths. Spoon quantities use eighths; very small cup quantities are expressed in teaspoons. Cheese totals round to half an ounce so the topping and sauce portions divide into eighth-ounce amounts. Butter used in two green-bean steps rounds to a quarter tablespoon so each half stays measurable.
+
+Ingredient lists, recipe directions, grocery totals, Notes exports and printouts use the rounded ingredient values. Whole-item counts still round up. Changing guest counts or turkey weight recalculates these practical amounts.
+
+## Fracciones comunes de cocina
+
+Las cantidades ajustadas se redondean a medidas comunes de cocina. Las tazas usan medios, tercios, cuartos y octavos. Las cucharadas y cucharaditas usan octavos. Las cantidades muy pequeñas de taza se muestran en cucharaditas. El queso se redondea a media onza para repartirlo entre la salsa y la cubierta en octavos de onza.
+
+Los ingredientes, pasos, compras, listas para Notas e impresiones usan las mismas cantidades redondeadas. Los ingredientes enteros siguen redondeándose hacia arriba.
